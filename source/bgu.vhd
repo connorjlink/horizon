@@ -16,7 +16,7 @@ use work.RISCV_types.all;
 
 entity bgu is
     port(
-        i_CLK            : in  std_logic;
+        i_Clock            : in  std_logic;
         i_DS1            : in  std_logic_vector(31 downto 0);
         i_DS2            : in  std_logic_vector(31 downto 0);
         i_BGUOp          : in  natural;

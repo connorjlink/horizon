@@ -26,8 +26,8 @@ entity RISCV_Processor is
         N : integer := work.RISCV_types.DATA_WIDTH
     );
     port(
-        iCLK      : in  std_logic;
-        iRST      : in  std_logic;
+        i_Clock      : in  std_logic;
+        i_Reset      : in  std_logic;
         iInstLd   : in  std_logic;
         iInstAddr : in  std_logic_vector(N-1 downto 0);
         iInstExt  : in  std_logic_vector(N-1 downto 0);
@@ -206,7 +206,7 @@ begin
     s_Halt <= (MEMWB_ID_buf.Break and EXMEM_ID_buf.Break);
 
     
-    nCLK <= not iCLK;
+    nCLK <= not i_Clock;
 
     -- This is required to be your final input to your instruction memory. This provides a feasible method to externally load the memory module which means that the synthesis tool must assume it knows nothing about the values stored in the instruction memory. If this is not included, much, if not all of the design is optimized out because the synthesis tool will believe the memory to be all zeros.
     with iInstLd select
@@ -219,7 +219,7 @@ begin
             DATA_WIDTH => N
         )
         port map(
-            clk  => iCLK,
+            clk  => i_Clock,
             addr => s_IPAddr(11 downto 2),
             data => iInstExt,
             we   => iInstLd,
@@ -232,7 +232,7 @@ begin
             DATA_WIDTH => N
         )
         port map(
-            clk  => nCLK, -- iCLK
+            clk  => nCLK, -- i_Clock
             addr => s_DMemAddr(11 downto 2),
             data => s_DMemData,
             we   => s_DMemWr,
@@ -249,11 +249,10 @@ begin
 
     CPU_Insn_IR: entity work.reg_insn
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock   => i_Clock,
+            i_Reset   => i_Reset,
             i_Stall   => s_IFID_Stall,
             i_Flush   => s_IFID_Flush,
-        
             i_Signals => IFID_IF_raw,
             o_Signals => IFID_IF_buf
         );
@@ -269,8 +268,8 @@ begin
 
     CPU_Driver_IR: entity work.reg_insn
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => s_IDEX_Stall,
             i_Flush   => s_IDEX_Flush,
         
@@ -280,8 +279,8 @@ begin
 
     CPU_Driver_DR: entity work.reg_driver
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => s_IDEX_Stall,
             i_Flush   => s_IDEX_Flush,
         
@@ -301,8 +300,8 @@ begin
 
     CPU_ALU_IR: entity work.reg_insn
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => s_EXMEM_Stall,
             i_Flush   => s_EXMEM_Flush,
         
@@ -312,8 +311,8 @@ begin
 
     CPU_ALU_DR: entity work.reg_driver
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => s_EXMEM_Stall,
             i_Flush   => s_EXMEM_Flush,
         
@@ -323,8 +322,8 @@ begin
 
     CPU_ALU_AR: entity work.reg_alu
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => s_EXMEM_Stall,
             i_Flush   => s_EXMEM_Flush,
         
@@ -345,8 +344,8 @@ begin
 
     CPU_Mem_IR: entity work.reg_insn
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => '0',
             i_Flush   => '0',
         
@@ -356,8 +355,8 @@ begin
 
     CPU_Mem_DR: entity work.reg_driver
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => '0',
             i_Flush   => '0',
         
@@ -367,8 +366,8 @@ begin
 
     CPU_Mem_AR: entity work.reg_alu
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => '0',
             i_Flush   => '0',
         
@@ -379,8 +378,8 @@ begin
 
     CPU_Mem_MR: entity work.reg_mem
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => '0',
             i_Flush   => '0',
         
@@ -402,8 +401,8 @@ begin
 
     CPU_WB_WR: entity work.reg_wb
         port map(
-            i_CLK     => iCLK,
-            i_RST     => iRST,
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
             i_Stall   => '0',
             i_Flush   => '0',
 
@@ -430,8 +429,8 @@ begin
             ResetAddress => 32x"00400000"
         )
         port map(
-            i_CLK        => iCLK,
-            i_RST        => iRST,
+            i_Clock        => i_Clock,
+            i_Reset        => i_Reset,
             i_Stall      => s_IPBreak,
             i_Load       => s_BranchTaken,
             i_Addr       => s_BranchAddr,
@@ -467,7 +466,7 @@ begin
 
     CPU_BGU: entity work.bgu
         port map(
-            i_CLK            => iCLK,
+            i_Clock            => i_Clock,
             i_DS1            => s_BGUOperand1,
             i_DS2            => s_BGUOperand2,
             i_BGUOp          => IDEX_ID_buf.BGUOp,
@@ -484,8 +483,8 @@ begin
 
     CPU_Driver: entity work.driver
         port map(
-            i_CLK        => iCLK,
-            i_RST        => iRST,
+            i_Clock        => i_Clock,
+            i_Reset        => i_Reset,
             i_Insn       => IDEX_IF_raw.Insn,    
             o_MemWrite   => IDEX_ID_raw.MemWrite,
             o_RegWrite   => IDEX_ID_raw.RegWrite,
@@ -530,8 +529,8 @@ begin
 
     CPU_RegisterFile: entity work.regfile
         port map(
-            i_CLK => nCLK,
-            i_RST => iRST,
+            i_Clock => nCLK,
+            i_Reset => i_Reset,
             i_RS1 => IDEX_ID_raw.RS1, -- NOTE: registers reads occur in the decode stage unless forwarding
             i_RS2 => IDEX_ID_raw.RS2,
             i_RD  => s_RegWrAddr,

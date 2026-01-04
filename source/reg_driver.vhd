@@ -15,8 +15,8 @@ use work.RISCV_types.all;
 
 entity reg_driver is
     port(
-        i_CLK      : in  std_logic;
-        i_RST      : in  std_logic;
+        i_Clock      : in  std_logic;
+        i_Reset      : in  std_logic;
         i_Stall    : in  std_logic;
         i_Flush    : in  std_logic;
 
@@ -32,7 +32,7 @@ begin
     process(all)
     begin
         -- insert a NOP
-        if i_RST = '1' then
+        if i_Reset = '1' then
             o_Signals.MemWrite   <= '0';
             o_Signals.RegWrite   <= '0';
             o_Signals.RFSrc      <= 0;
@@ -54,7 +54,7 @@ begin
             o_Signals.IPToALU    <= '0';
             o_Signals.Data       <= (others => '0');
 
-        elsif rising_edge(i_CLK) then
+        elsif rising_edge(i_Clock) then
 
             -- insert a NOP
             if i_Flush = '1' then

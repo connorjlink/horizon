@@ -31,8 +31,8 @@ architecture behavior of tb_dffg is
 
 
   component dffg
-    port(i_CLK        : in std_logic;     -- Clock input
-         i_RST        : in std_logic;     -- Reset input
+    port(i_Clock        : in std_logic;     -- Clock input
+         i_Reset        : in std_logic;     -- Reset input
          i_WE         : in std_logic;     -- Write enable input
          i_D          : in std_logic;     -- Data value input
          o_Q          : out std_logic);   -- Data value output
@@ -45,8 +45,8 @@ architecture behavior of tb_dffg is
 begin
 
   DUT: dffg 
-  port map(i_CLK => s_CLK, 
-           i_RST => s_RST,
+  port map(i_Clock => s_CLK, 
+           i_Reset => s_RST,
            i_WE  => s_WE,
            i_D   => s_D,
            o_Q   => s_Q);

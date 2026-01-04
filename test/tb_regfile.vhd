@@ -28,8 +28,8 @@ constant cCLK_PER : time := gCLK_HPER * 2;
 
 -- Element under test
 component regfile is
-    port(i_CLK : in  std_logic;
-         i_RST : in  std_logic;
+    port(i_Clock : in  std_logic;
+         i_Reset : in  std_logic;
          i_RS1 : in  std_logic_vector(4 downto 0);
          i_RS2 : in  std_logic_vector(4 downto 0);
          i_RD  : in  std_logic_vector(4 downto 0);
@@ -55,8 +55,8 @@ begin
 
 -- Instantiate the module under test
 DUT0: regfile
-	port map(i_CLK => CLK,
-             i_RST => reset,
+	port map(i_Clock => CLK,
+             i_Reset => reset,
              i_RS1 => s_iRS1,
              i_RS2 => s_iRS2,
              i_RD  => s_iRD,

@@ -48,8 +48,8 @@ begin
 -- Instantiate the module under test
 DUTO: entity work.decoder
     port map(
-        i_CLK    => CLK,
-        i_RST    => reset,
+        i_Clock    => CLK,
+        i_Reset    => reset,
         i_Insn   => s_iInsn,
         o_Opcode => s_oOpcode,
         o_RD     => s_oRD,

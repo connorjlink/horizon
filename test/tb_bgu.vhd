@@ -29,7 +29,7 @@ constant cCLK_PER : time := gCLK_HPER * 2;
 -- Element under test
 component bgu is
     port(
-        i_CLK    : in  std_logic;
+        i_Clock    : in  std_logic;
         i_DS1    : in  std_logic_vector(31 downto 0);
         i_DS2    : in  std_logic_vector(31 downto 0);
         i_BGUOp  : in  natural;
@@ -51,7 +51,7 @@ begin
 -- Instantiate the module under test
 DUTO: bgu
     port map(
-        i_CLK    => CLK,
+        i_Clock    => CLK,
         i_DS1    => s_iDS1,
         i_DS2    => s_iDS2,
         i_BGUOp  => s_iBGUOp,

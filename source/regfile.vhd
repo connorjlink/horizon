@@ -14,8 +14,8 @@ use IEEE.numeric_std.all;
 use work.RISCV_types.all;
 
 entity regfile is
-    port(i_CLK : in  std_logic;
-         i_RST : in  std_logic;
+    port(i_Clock : in  std_logic;
+         i_Reset : in  std_logic;
          i_RS1 : in  std_logic_vector(4 downto 0);
          i_RS2 : in  std_logic_vector(4 downto 0);
          i_RD  : in  std_logic_vector(4 downto 0);
@@ -40,8 +40,8 @@ end component;
 
 component register_N is
     generic(N : integer := 32);
-    port(i_CLK : in  std_logic;                       -- Clock input
-         i_RST : in  std_logic;                       -- Reset input
+    port(i_Clock : in  std_logic;                       -- Clock input
+         i_Reset : in  std_logic;                       -- Reset input
          i_WE  : in  std_logic;                       -- Write enable input
          i_D   : in  std_logic_vector(N-1 downto 0);  -- Data value input
          o_Q   : out std_logic_vector(N-1 downto 0)); -- Data value output
@@ -71,8 +71,8 @@ begin
     generate
         REGISTERI: register_N
             generic map(N => 32)
-            port map(i_CLK => i_CLK,
-                     i_RST => i_RST,
+            port map(i_Clock => i_Clock,
+                     i_Reset => i_Reset,
                      i_WE  => s_WEm(i),
                      i_D   => i_D,
                      o_Q   => s_Rx(i));

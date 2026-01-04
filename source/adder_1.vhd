@@ -25,35 +25,35 @@ signal s_C1 : std_logic;
 
 begin
 
-    g_PartialSum: work.xor_2
+    g_PartialSum: entity work.xor_2
         port map(
             i_A => i_A,
             i_B => i_B,
             o_F => s_S
         );
 
-    g_PartialCarry1: work.and_2
+    g_PartialCarry1: entity work.and_2
         port map(
             i_A => i_A,
             i_B => i_B,
             o_F => s_C0
         );
 
-    g_PartialCarry2: work.and_2
+    g_PartialCarry2: entity work.and_2
         port map(
             i_A => s_S,
             i_B => i_Carry,
             o_F => s_C1
         );
 
-    g_Sum: work.xor_2
+    g_Sum: entity work.xor_2
         port map(
             i_A => s_S,
             i_B => i_Carry,
             o_F => o_S
         );
 
-    g_Carry: work.or_2
+    g_Carry: entity work.or_2
         port map(
             i_A => s_C0,
             i_B => s_C1,

@@ -16,8 +16,8 @@ use work.RISCV_types.all;
 
 entity driver is
     port(
-        i_CLK        : in  std_logic;
-        i_RST        : in  std_logic;
+        i_Clock        : in  std_logic;
+        i_Reset        : in  std_logic;
         i_Insn       : in  std_logic_vector(31 downto 0);
         o_MemWrite   : out std_logic;
         o_RegWrite   : out std_logic;
@@ -55,8 +55,8 @@ end component;
 
 component decoder is
     port(
-        i_CLK    : in  std_logic;
-        i_RST    : in  std_logic;
+        i_Clock    : in  std_logic;
+        i_Reset    : in  std_logic;
         i_Insn   : in  std_logic_vector(31 downto 0);
         o_Opcode : out std_logic_vector(6 downto 0);
         o_RD     : out std_logic_vector(4 downto 0);
@@ -155,8 +155,8 @@ begin
 
     g_InstructionDecoder: decoder
         port map(
-            i_CLK    => i_CLK,
-            i_RST    => i_RST,
+            i_Clock    => i_Clock,
+            i_Reset    => i_Reset,
             i_Insn   => i_Insn,
             o_Opcode => s_decOpcode,
             o_RD     => o_RD,
@@ -190,7 +190,7 @@ begin
         variable v_IPToALU    : std_logic;
 
     begin 
-        if i_RST = '0' then
+        if i_Reset = '0' then
             v_IsBranch   := '0';
             v_Break      := '0';
             v_nZeroSign  := '1'; -- default case is sign extension

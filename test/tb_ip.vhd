@@ -32,8 +32,8 @@ component ip is
         ResetAddress : std_logic_vector(31 downto 0) := 32x"00400000"
     );
     port(
-        i_CLK        : in  std_logic;
-        i_RST        : in  std_logic;
+        i_Clock        : in  std_logic;
+        i_Reset        : in  std_logic;
         i_Load       : in  std_logic;
         i_Addr       : in  std_logic_vector(31 downto 0);
         i_nInc2_Inc4 : in  std_logic; -- 0 = inc2, 1 = inc4
@@ -59,8 +59,8 @@ begin
 -- Instantiate the module under test
 DUTO: ip
     port map(
-        i_CLK        => CLK,
-        i_RST        => reset,
+        i_Clock        => CLK,
+        i_Reset        => reset,
         i_Load       => s_iLoad,
         i_Addr       => s_iAddr,
         i_nInc2_Inc4 => s_inInc2_Inc4,

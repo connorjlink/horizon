@@ -15,8 +15,8 @@ use work.RISCV_types.all;
 
 entity reg_wb is
     port(
-        i_CLK      : in  std_logic;
-        i_RST      : in  std_logic;
+        i_Clock      : in  std_logic;
+        i_Reset      : in  std_logic;
         i_Stall    : in  std_logic;
         i_Flush    : in  std_logic;
 
@@ -32,13 +32,13 @@ begin
     process(all)
     begin
         -- insert a NOP
-        if i_RST = '1' then
+        if i_Reset = '1' then
             o_Signals.F       <= (others => '0');
             o_Signals.Data    <= (others => '0');
             o_Signals.Forward <= 0;
             o_Signals.LSWidth <= 0;
 
-        elsif rising_edge(i_CLK) then
+        elsif rising_edge(i_Clock) then
 
             -- insert a NOP
             if i_Flush = '1' then

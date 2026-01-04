@@ -28,8 +28,8 @@ component RISCV_Processor is
 		N : integer := work.RISCV_types.DATA_WIDTH
 	);
 	port(
-		iCLK      : in  std_logic;
-		iRST      : in  std_logic;
+		i_Clock      : in  std_logic;
+		i_Reset      : in  std_logic;
 		iInstLd   : in  std_logic;
 		iInstAddr : in  std_logic_vector(N-1 downto 0);
 		iInstExt  : in  std_logic_vector(N-1 downto 0);
@@ -53,8 +53,8 @@ begin
 -- Instantiate the module under test
 DUT0: RISCV_Processor
 	port map(
-		iCLK      => CLK,
-		iRST      => reset,
+		i_Clock      => CLK,
+		i_Reset      => reset,
 		iInstLd   => iInstLd,
 		iInstAddr => iInstAddr,
 		iInstExt  => iInstExt,

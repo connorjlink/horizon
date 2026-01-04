@@ -28,8 +28,8 @@ constant cCLK_PER : time := gCLK_HPER * 2;
 -- Element under test
 component driver is
     port(
-        i_CLK        : in  std_logic;
-        i_RST        : in  std_logic;
+        i_Clock        : in  std_logic;
+        i_Reset        : in  std_logic;
         i_Insn       : in  std_logic_vector(31 downto 0);
         i_MaskStall  : in  std_logic;
         o_MemWrite   : out std_logic;
@@ -80,8 +80,8 @@ begin
 -- Instantiate the module under test
 DUTO: driver
     port map(
-        i_CLK        => CLK,
-        i_RST        => reset,
+        i_Clock        => CLK,
+        i_Reset        => reset,
         i_Insn       => s_iInsn,
         i_MaskStall  => s_iMaskStall,
         o_MemWrite   => s_oMemWrite,

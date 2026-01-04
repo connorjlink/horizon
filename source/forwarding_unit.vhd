@@ -1,12 +1,6 @@
-------------------------------------------------------------------------
--- Connor Link
--- Iowa State University
--------------------------------------------------------------------------
+-- Horizon: forwarding_unit.vhd
+-- (c) 2026 Connor J. Link. All rights reserved.
 
--------------------------------------------------------------------------
--- dfu.vhd
--- DESCRIPTION: This file contains an implementation of a 5-stage pipelined RISC-V data forwarder.
--------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.std_logic_1164.all;
@@ -14,7 +8,7 @@ use IEEE.numeric_std.all;
 library work;
 use work.RISCV_types.all;
 
-entity dfu is
+entity forwarding_unit is
     port(
         i_IFID_RS1        : in  std_logic_vector(4 downto 0);
         i_IFID_RS2        : in  std_logic_vector(4 downto 0);
@@ -32,7 +26,7 @@ entity dfu is
         i_EXMEM_RegWrite  : in  std_logic;
         i_EXMEM_MemWrite  : in  std_logic;
         i_EXMEM_IsLoad    : in  std_logic;
-        
+
         i_MEMWB_RD        : in  std_logic_vector(4 downto 0);
         i_MEMWB_RegWrite  : in  std_logic;
         i_MEMWB_MemWrite  : in  std_logic;
@@ -48,10 +42,9 @@ entity dfu is
         o_ForwardBGUOperand2    : out natural;
         o_ForwardMemData        : out natural
     );
-end dfu;
+end forwarding_unit;
 
-architecture mixed of dfu is
-
+architecture implementation of forwarding_unit is
 begin
 
     process(
@@ -70,7 +63,6 @@ begin
         v_ForwardBGUOperand1    := 0;
         v_ForwardBGUOperand2    := 0;
         v_ForwardMemData        := 0;
-
 
         -----------------------------------------------------
         ---- Arithmetic and memory access hazard resolution with forwarding
@@ -205,5 +197,5 @@ begin
 
     end process;
 
-end mixed;
+end implementation;
    

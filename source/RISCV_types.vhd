@@ -72,11 +72,11 @@ constant FROM_MEMWB_ALU : natural := 4;
 
 -- Record type declarations for the pipeline setup
 -- Instruction register -> Driver
-type insn_record_t is record
-    IPAddr   : std_logic_vector(31 downto 0);
+type instruction_record_t is record
+    InstructionAddress : std_logic_vector(31 downto 0);
     LinkAddr : std_logic_vector(31 downto 0);
-    Insn     : std_logic_vector(31 downto 0);
-end record insn_record_t;
+    Instruction     : std_logic_vector(31 downto 0);
+end record instruction_record_t;
 
 -- Driver -> ALU
 type driver_record_t is record
@@ -96,8 +96,8 @@ type driver_record_t is record
     Break      : std_logic;
     BranchMode : natural;
     IsBranch   : std_logic;
-    IPStride   : std_logic; -- 0 = 2bytes, 1 = 4bytes
-    SignExtend : std_logic; -- 0 = zero-extend, 1 = sign-extend
+    IPStride   : std_logic; -- 0: 2 bytes, 1: 4 bytes
+    SignExtend : std_logic; -- 0: zero-extend, 1: sign-extend
     IPToALU    : std_logic;
     Data       : std_logic_vector(31 downto 0);
 end record driver_record_t;
@@ -109,21 +109,16 @@ type alu_record_t is record
 end record alu_record_t;
 
 -- Memory -> Register file
-type mem_record_t is record
+type memory_record_t is record
     Data : std_logic_vector(31 downto 0);
-end record mem_record_t;
+end record memory_record_t;
 
 -- Register File -> x (delay circuit)
-type wb_record_t is record
+type register_record_t is record
     F       : std_logic_vector(31 downto 0); -- MEMWB ALU result delayed
     Data    : std_logic_vector(31 downto 0); -- MEMWB MemData delayed
     Forward : natural;                       -- ForwardedMemData delayed
     LSWidth    : natural;
-end record wb_record_t;
-
+end record register_record_t;
 
 end package RISCV_types;
-
--- package body RISCV_types is
---     -- This section is intentionally left blank
--- end package body RISCV_types;

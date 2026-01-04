@@ -3,6 +3,7 @@
 
 library IEEE;
 use IEEE.std_logic_1164.all;
+library work;
 use work.adder_N.all;
 use work.multiplexer_2to1_N.all;
 use work.not_N.all;
@@ -27,7 +28,7 @@ signal s_Bm : std_logic_vector(N-1 downto 0);
 
 begin
 
-    g_Complementor: work.not_N
+    g_Complementor: entity work.not_N
         generic map(
             N => N
         )
@@ -36,7 +37,7 @@ begin
             o_F => s_Bi
         );
 
-    g_Multiplexer: work.multiplexer_2to1_N
+    g_Multiplexer: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -47,7 +48,7 @@ begin
             o_O  => s_Bm
         );
 
-    g_NBit_Adder: work.adder_N
+    g_NBit_Adder: entity work.adder_N
         generic map(
             N => N
         )

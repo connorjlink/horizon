@@ -28,8 +28,8 @@ constant cCLK_PER : time := gCLK_HPER * 2;
 -- Element under test
 component register_N is
     generic(N : integer := 32);
-	port(i_CLK : in  std_logic;                       -- Clock input
-         i_RST : in  std_logic;                       -- Reset input
+	port(i_Clock : in  std_logic;                       -- Clock input
+         i_Reset : in  std_logic;                       -- Reset input
          i_WE  : in  std_logic;                       -- Write enable input
          i_D   : in  std_logic_vector(N-1 downto 0);  -- Data value input
          o_Q   : out std_logic_vector(N-1 downto 0)); -- Data value output
@@ -48,8 +48,8 @@ begin
 -- Instantiate the module under test
 DUT0: register_N
     generic map(N => DATA_WIDTH)
-	port map(i_CLK => CLK,
-             i_RST => reset,
+	port map(i_Clock => CLK,
+             i_Reset => reset,
              i_WE  => s_iWE,
              i_D   => s_iD,
              o_Q   => s_oQ);
