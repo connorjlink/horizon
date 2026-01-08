@@ -1,12 +1,5 @@
--------------------------------------------------------------------------
--- Connor Link
--- Iowa State University
--------------------------------------------------------------------------
-
--------------------------------------------------------------------------
--- bgu.vhd
--- DESCRIPTION: This file contains an implementation of a basic RISC-V branch generation unit.
--------------------------------------------------------------------------
+-- Horizon: branch_unit.vhd
+-- (c) 2026 Connor J. Link. All rights reserved.
 
 library IEEE;
 use IEEE.std_logic_1164.all;
@@ -14,20 +7,19 @@ use IEEE.numeric_std.all;
 library work;
 use work.types.all;
 
-entity bgu is
+entity branch_unit is
     port(
         i_Clock          : in  std_logic;
         i_DS1            : in  std_logic_vector(31 downto 0);
         i_DS2            : in  std_logic_vector(31 downto 0);
-        i_BranchOperator     : in  branch_operator_t;
+        i_BranchOperator : in  branch_operator_t;
         o_BranchTaken    : out std_logic;
         o_BranchNotTaken : out std_logic
         -- TODO: prediction results here
     );
-end bgu;
+end branch_unit;
 
-architecture mixed of bgu is
-
+architecture implementation of branch_unit is
 begin 
 
     process(
@@ -101,4 +93,4 @@ begin
 
     end process;
     
-end mixed;
+end implementation;

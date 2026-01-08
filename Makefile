@@ -15,11 +15,15 @@ setup:
 	ghdl -a --work=work --std=08 ./source/extender_NtoM.vhd
 	ghdl -a --work=work --std=08 ./source/arithmetic_logic_unit.vhd
 	ghdl -a --work=work --std=08 ./source/control_unit.vhd
-	ghdl -a --work=work --std=08 ./source/bgu.vhd
+	ghdl -a --work=work --std=08 ./source/branch_unit.vhd
 
 test_barrel_shifter:
 	ghdl -a --work=work --std=08 ./source/barrel_shifter.vhd ./test/tb_barrel_shifter.vhd
 	ghdl --elab-run --std=08 tb_barrel_shifter
+
+test_adder_1:
+	ghdl -a --work=work --std=08 ./source/adder_1.vhd ./test/tb_adder_1.vhd
+	ghdl --elab-run --std=08 tb_adder_1
 
 test_adder_N:
 	ghdl -a --work=work --std=08 ./source/adder_N.vhd ./test/tb_adder_N.vhd
@@ -28,4 +32,5 @@ test_adder_N:
 verify:
 	nmake setup
 	nmake test_barrel_shifter
+	nmake test_adder_1
 	nmake test_adder_N

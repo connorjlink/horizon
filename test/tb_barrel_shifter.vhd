@@ -34,7 +34,7 @@ signal s_oS            : std_logic_vector(31 downto 0);
 begin
 
     -- Design-under-test instantiation
-    DUT0: entity work.barrel_shifter
+    DUT: entity work.barrel_shifter
         port map(
             i_A            => s_iA,
             i_B            => s_iB(4 downto 0),

@@ -1,5 +1,6 @@
 -- Horizon: tb_adder_N.vhd
 -- (c) 2026 Connor J. Link. All rights reserved.
+
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_textio.all;
@@ -31,7 +32,7 @@ signal s_oCarry : std_logic;
 begin
 
 	-- Design-under-test instantiation
-	DUT0: entity work.adder_N
+	DUT: entity work.adder_N
 	    generic map(
 			N => DATA_WIDTH
 		)
