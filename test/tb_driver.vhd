@@ -16,14 +16,14 @@ use std.env.all;
 use std.textio.all;
 
 entity tb_driver is
-    generic(gCLK_HPER  : time := 10 ns;
+    generic(CLOCK_HALF_PERIOD  : time := 10 ns;
      	    DATA_WIDTH : integer := 32);
 end tb_driver;
 
 architecture mixed of tb_driver is
 
--- Total clock period
-constant cCLK_PER : time := gCLK_HPER * 2;
+
+constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
 
 -- Element under test
 component driver is
@@ -52,10 +52,10 @@ component driver is
     );
 end component;
 
--- Create helper signals
-signal CLK, reset : std_logic := '0';
+-- Testbench signals
+signal s_Clock, s_Reset : std_logic := '0';
 
--- Create input and output signals for the module under test
+-- Stimulus signals
 signal s_iInsn       : std_logic_vector(31 downto 0) := 32x"0";
 signal s_iMaskStall  : std_logic := '0';  -- This will only be used for the pipelined implementation, so safe to ignore for now!
 signal s_oMemWrite   : std_logic;
@@ -77,7 +77,7 @@ signal s_oIPToALU    : std_logic;
 
 begin
 
--- Instantiate the module under test
+-- Design-under-test instantiation
 DUTO: driver
     port map(
         i_Clock        => CLK,
@@ -106,9 +106,9 @@ DUTO: driver
 P_CLK: process
 begin
 	CLK <= '1';         -- clock starts at 1
-	wait for gCLK_HPER; -- after half a cycle
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle
 	CLK <= '0';         -- clock becomes a 0 (negative edge)
-	wait for gCLK_HPER; -- after half a cycle, process begins evaluation again
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle, process begins evaluation again
 end process;
 
 -- This process resets the sequential components of the design.
@@ -118,9 +118,9 @@ end process;
 P_RST: process
 begin
 	reset <= '0';   
-	wait for gCLK_HPER/2;
+	wait for CLOCK_HALF_PERIOD/2;
 	reset <= '1';
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	reset <= '0';
 	wait;
 end process;  
@@ -129,45 +129,45 @@ end process;
 -- Assign inputs 
 P_TEST_CASES: process
 begin
-    wait for gCLK_HPER;
-	wait for gCLK_HPER/2; -- don't change inputs on clock edges
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD;
+	wait for CLOCK_HALF_PERIOD/2; -- don't change inputs on clock edges
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 1: 
     -- addi x25, x0, 0   # 0x00000c93
     s_iInsn <= 32x"00000c93";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 2:
     -- addi x26, x0, 256 # 0x10000d13
     s_iInsn <= 32x"10000d13";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 3:
     -- lw x1, 0(x25)     # 0x000ca083
     s_iInsn <= 32x"000ca083";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 4:
     -- lw x2, 4(x25)     # 0x004ca103
     s_iInsn <= 32x"004ca103";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 5:
     -- add x1, x1, x2    # 0x002080b3
     s_iInsn <= 32x"002080b3";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test Case 6:
     -- sw x1, 0(x26)     # 0x001d2023
     s_iInsn <= 32x"001d2023";
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     wait;
 end process;

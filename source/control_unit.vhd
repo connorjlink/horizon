@@ -65,7 +65,7 @@ begin
     g_ControlUnitExtenderI: entity work.extender_NtoM
         generic map(
             N => 12,
-            M => 32
+            M => DATA_WIDTH
         )
         port map(
             i_D            => s_deciImm,
@@ -77,7 +77,7 @@ begin
     g_ControlUnitExtenderS: entity work.extender_NtoM
         generic map(
             N => 12,
-            M => 32
+            M => DATA_WIDTH
         )
         port map(
             i_D            => s_decsImm,
@@ -89,7 +89,7 @@ begin
     g_ControlUnitExtenderB: entity work.extender_NtoM
         generic map(
             N => 13,
-            M => 32
+            M => DATA_WIDTH
         )
         port map(
             i_D            => s_decbImm,
@@ -105,7 +105,7 @@ begin
     g_ControlUnitExtenderJ: entity work.extender_NtoM
         generic map(
             N => 21,
-            M => 32
+            M => DATA_WIDTH
         )
         port map(
             i_D            => s_decjImm,

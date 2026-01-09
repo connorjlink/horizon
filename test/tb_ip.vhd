@@ -16,14 +16,14 @@ use std.env.all;
 use std.textio.all;
 
 entity tb_ip is
-    generic(gCLK_HPER  : time := 10 ns;
+    generic(CLOCK_HALF_PERIOD  : time := 10 ns;
      	    DATA_WIDTH : integer := 32);
 end tb_ip;
 
 architecture mixed of tb_ip is
 
--- Total clock period
-constant cCLK_PER : time := gCLK_HPER * 2;
+
+constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
 
 -- Element under test
 component ip is
@@ -43,10 +43,10 @@ component ip is
     );
 end component;
 
--- Create helper signals
-signal CLK, reset : std_logic := '0';
+-- Testbench signals
+signal s_Clock, s_Reset : std_logic := '0';
 
--- Create input and output signals for the module under test
+-- Stimulus signals
 signal s_iLoad       : std_logic := '0';
 signal s_iAddr       : std_logic_vector(31 downto 0) := 32x"0";
 signal s_inInc2_Inc4 : std_logic := '0';
@@ -56,7 +56,7 @@ signal s_oLinkAddr   : std_logic_vector(31 downto 0);
 
 begin
 
--- Instantiate the module under test
+-- Design-under-test instantiation
 DUTO: ip
     port map(
         i_Clock        => CLK,
@@ -73,9 +73,9 @@ DUTO: ip
 P_CLK: process
 begin
 	CLK <= '1';         -- clock starts at 1
-	wait for gCLK_HPER; -- after half a cycle
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle
 	CLK <= '0';         -- clock becomes a 0 (negative edge)
-	wait for gCLK_HPER; -- after half a cycle, process begins evaluation again
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle, process begins evaluation again
 end process;
 
 -- This process resets the sequential components of the design.
@@ -85,9 +85,9 @@ end process;
 P_RST: process
 begin
 	reset <= '0';   
-	wait for gCLK_HPER/2;
+	wait for CLOCK_HALF_PERIOD/2;
 	reset <= '1';
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	reset <= '0';
 	wait;
 end process;  
@@ -96,9 +96,9 @@ end process;
 -- Assign inputs 
 P_TEST_CASES: process
 begin
-    wait for gCLK_HPER;
-	wait for gCLK_HPER/2; -- don't change inputs on clock edges
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD;
+	wait for CLOCK_HALF_PERIOD/2; -- don't change inputs on clock edges
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- s_iLoad      
     -- s_iAddr      
@@ -110,59 +110,59 @@ begin
     s_iAddr <= 32x"0";
     s_inInc2_Inc4 <= '1';
     s_iStall <= '0';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
     
     -- Test case 2: counting up by 2
     s_iLoad <= '0';
     s_iAddr <= 32x"0";
     s_inInc2_Inc4 <= '0';
     s_iStall <= '0';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test case 3: stall counting for both counting modes
     s_iLoad <= '0';
     s_iAddr <= 32x"0";
     s_inInc2_Inc4 <= '1';
     s_iStall <= '1';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
     s_inInc2_Inc4 <= '0';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test case 4: loading a custom address
     s_iLoad <= '1';
     s_iAddr <= 32x"FEEDFACE";
     s_inInc2_Inc4 <= '0';
     s_iStall <= '0';
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
     s_iLoad <= '0';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- Test case 5: loading a custom address
     s_iLoad <= '1';
     s_iAddr <= 32x"0";
     s_inInc2_Inc4 <= '0';
     s_iStall <= '0';
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
     s_iLoad <= '0';
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
-    wait for gCLK_HPER * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
+    wait for CLOCK_HALF_PERIOD * 2;
 
 
     wait;

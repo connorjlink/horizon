@@ -56,7 +56,7 @@ begin
         s_Reset <= '0';   
         wait for CLOCK_HALF_PERIOD / 2;
         s_Reset <= '1';
-        wait for CLOCK_HALF_PERIOD * 2;
+        wait for CLOCK_PERIOD;
         s_Reset <= '0';
         wait;
     end process;  
@@ -459,7 +459,7 @@ begin
             report "tb_barrel_shifter: testcase 43 failed (sll 31)"
             severity error;
 
-        stop;
+        finish;
 
     end process;
 

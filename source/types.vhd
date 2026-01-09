@@ -6,7 +6,7 @@ use IEEE.std_logic_1164.all;
 
 package types is
 
--- Generic placeholders to define the bit widths for our architecture
+-- Generic placeholders to define the bit widths for the architecture
 constant DATA_WIDTH : natural := 32;
 constant ADDR_WIDTH : natural := 10;
 

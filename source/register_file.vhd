@@ -42,7 +42,7 @@ begin
     g_NRegisters: for i in 1 to 31 generate
         REGISTERI: entity work.register_N
             generic map(
-                N => 32
+                N => DATA_WIDTH
             )
             port map(
                 i_Clock       => i_Clock,

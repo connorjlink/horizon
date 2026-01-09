@@ -10,7 +10,7 @@ use work.types.all;
 entity extender_NtoM is
     generic(
         N : integer := 12;
-        M : integer := work.types.DATA_WIDTH
+        M : integer := DATA_WIDTH
     ); 
     port(
         i_D            : in  std_logic_vector(N-1 downto 0);

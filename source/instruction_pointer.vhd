@@ -4,6 +4,8 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+library work;
+use work.types.all;
 
 entity instruction_pointer is
     generic(
@@ -45,7 +47,7 @@ begin
 
     g_InstructionPointer: entity work.register_N
         generic map(
-            N => 32
+            N => DATA_WIDTH
         )
         port map(
             i_Clock       => i_Clock,
@@ -60,7 +62,7 @@ begin
 
     g_Upcounter: entity work.adder_N
         generic map(
-            N => 32
+            N => DATA_WIDTH
         )
         port map(
             i_A     => s_IPAddress,

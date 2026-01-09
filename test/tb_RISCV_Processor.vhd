@@ -17,7 +17,7 @@ use std.textio.all;             -- For basic I/O
 use work.types.all;
 
 entity tb_RISCV_Processor is
-	generic(gCLK_HPER  : time := 10 ns;
+	generic(CLOCK_HALF_PERIOD  : time := 10 ns;
      	    DATA_WIDTH : integer := 32);
 end tb_RISCV_Processor;
 
@@ -37,11 +37,11 @@ component RISCV_Processor is
 	); 
 end component;
 
--- Total clock period
-constant cCLK_PER : time := gCLK_HPER * 2;
 
--- Create helper signals
-signal CLK, reset : std_logic := '0';
+constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
+
+-- Testbench signals
+signal s_Clock, s_Reset : std_logic := '0';
 
 -- Create inputs signals
 signal iInstLd : std_logic := '0';
@@ -50,7 +50,7 @@ signal iInstAddr, iInstExt, oALUOut : std_logic_vector(31 downto 0) := 32x"0";
 
 begin
 
--- Instantiate the module under test
+-- Design-under-test instantiation
 DUT0: RISCV_Processor
 	port map(
 		i_Clock      => CLK,
@@ -68,9 +68,9 @@ DUT0: RISCV_Processor
 P_RST: process
 begin
 	reset <= '1';
-	wait for gCLK_HPER*2;
-	wait for gCLK_HPER*2;
-	wait for gCLK_HPER/2; -- don't change inputs on clock edges
+	wait for CLOCK_HALF_PERIOD*2;
+	wait for CLOCK_HALF_PERIOD*2;
+	wait for CLOCK_HALF_PERIOD/2; -- don't change inputs on clock edges
 	reset <= '0';
 	wait;
 end process;  
@@ -79,18 +79,18 @@ end process;
 P_CLK: process
 begin
 	CLK <= '1';         -- clock starts at 1
-	wait for gCLK_HPER; -- after half a cycle
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle
 	CLK <= '0';         -- clock becomes a 0 (negative edge)
-	wait for gCLK_HPER; -- after half a cycle, process begins evaluation again
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle, process begins evaluation again
 end process;
 
 
 -- Assign inputs 
 P_TEST_CASES: process
 begin
-	wait for gCLK_HPER;
-	wait for gCLK_HPER/2; -- don't change inputs on clock edges
-    wait for gCLK_HPER * 2;
+	wait for CLOCK_HALF_PERIOD;
+	wait for CLOCK_HALF_PERIOD/2; -- don't change inputs on clock edges
+    wait for CLOCK_HALF_PERIOD * 2;
 
     -- running loaded hex binary image
     

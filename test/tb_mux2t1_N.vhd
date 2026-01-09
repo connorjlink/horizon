@@ -16,14 +16,14 @@ use std.env.all;                -- For hierarchical/external signals
 use std.textio.all;             -- For basic I/O
 
 entity tb_mux2t1_N is
-	generic(gCLK_HPER  : time := 10 ns;
+	generic(CLOCK_HALF_PERIOD  : time := 10 ns;
      	    DATA_WIDTH : integer := 8);
 end tb_mux2t1_N;
 
 architecture mixed of tb_mux2t1_N is
 
--- Total clock period
-constant cCLK_PER : time := gCLK_HPER * 2;
+
+constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
 
 -- Element under test
 component mux2t1_N is
@@ -34,10 +34,10 @@ component mux2t1_N is
 	     o_O  : out std_logic_vector(N-1 downto 0));
 end component;
 
--- Create helper signals
-signal CLK, reset : std_logic := '0';
+-- Testbench signals
+signal s_Clock, s_Reset : std_logic := '0';
 
--- Create input and output signals for the module under test
+-- Stimulus signals
 signal s_iD0 : std_logic_vector(DATA_WIDTH-1 downto 0) := x"00";
 signal s_iD1 : std_logic_vector(DATA_WIDTH-1 downto 0) := x"00";
 signal s_iS  : std_logic := '0';
@@ -45,7 +45,7 @@ signal s_oO  : std_logic_vector(DATA_WIDTH-1 downto 0);
 
 begin
 
--- Instantiate the module under test
+-- Design-under-test instantiation
 DUT0: mux2t1_N
     generic map(N => DATA_WIDTH)
 	port map(i_D0 => s_iD0,
@@ -58,9 +58,9 @@ DUT0: mux2t1_N
 P_CLK: process
 begin
 	CLK <= '1';         -- clock starts at 1
-	wait for gCLK_HPER; -- after half a cycle
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle
 	CLK <= '0';         -- clock becomes a 0 (negative edge)
-	wait for gCLK_HPER; -- after half a cycle, process begins evaluation again
+	wait for CLOCK_HALF_PERIOD; -- after half a cycle, process begins evaluation again
 end process;
 
 -- This process resets the sequential components of the design.
@@ -70,9 +70,9 @@ end process;
 P_RST: process
 begin
 	reset <= '0';   
-	wait for gCLK_HPER/2;
+	wait for CLOCK_HALF_PERIOD/2;
 	reset <= '1';
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	reset <= '0';
 	wait;
 end process;  
@@ -81,63 +81,63 @@ end process;
 -- Assign inputs 
 P_TEST_CASES: process
 begin
-	wait for gCLK_HPER;
-	wait for gCLK_HPER/2; -- don't change inputs on clock edges
+	wait for CLOCK_HALF_PERIOD;
+	wait for CLOCK_HALF_PERIOD/2; -- don't change inputs on clock edges
 
 	-- Test Case 1:
 	s_iS  <= '0';
 	s_iD0 <= x"00";
 	s_iD1 <= x"00";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $00
 
 	-- Test Case 2:
 	s_iS  <= '0';
 	s_iD0 <= x"00";
 	s_iD1 <= x"EE";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $00
 
 	-- Test Case 3:
 	s_iS  <= '0';
 	s_iD0 <= x"11";
 	s_iD1 <= x"00";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $11
 
 	-- Test Case 4:
 	s_iS  <= '0';
 	s_iD0 <= x"11";
 	s_iD1 <= x"EE";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $11
 
 	-- Test Case 5:
 	s_iS  <= '1';
 	s_iD0 <= x"00";
 	s_iD1 <= x"00";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $00
 
 	-- Test Case 6:
 	s_iS  <= '1';
 	s_iD0 <= x"00";
 	s_iD1 <= x"EE";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $EE
 
 	-- Test Case 7:
 	s_iS  <= '1';
 	s_iD0 <= x"11";
 	s_iD1 <= x"00";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $00
 
 	-- Test Case 8:
 	s_iS  <= '1';
 	s_iD0 <= x"11";
 	s_iD1 <= x"EE";
-	wait for gCLK_HPER*2;
+	wait for CLOCK_HALF_PERIOD*2;
 	-- Expect: s_oO to be $EE
 
 	wait;

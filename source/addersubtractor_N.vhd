@@ -19,8 +19,9 @@ end addersubtractor_N;
 
 architecture implementation of addersubtractor_N is
 
-signal s_Bi : std_logic_vector(N-1 downto 0);
-signal s_Bm : std_logic_vector(N-1 downto 0);
+signal s_Bi    : std_logic_vector(N-1 downto 0);
+signal s_Bm    : std_logic_vector(N-1 downto 0);
+signal s_Carry : std_logic; -- carry/borrow complement
 
 begin
 
@@ -53,7 +54,11 @@ begin
             i_B     => s_Bm,
             i_Carry => i_IsSubtraction,
             o_S     => o_S,
-            o_Carry => o_Carry
+            o_Carry => s_Carry
         );
+
+    with i_IsSubtraction select 
+        o_Carry <= s_Carry     when '0',
+                   not s_Carry when others;
 
 end implementation;
