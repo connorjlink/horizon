@@ -2,4 +2,4 @@
 /riscv/addi_dependency.s
 /riscv/branch.s
 
-*.cf
+./work-obj08.cf

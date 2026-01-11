@@ -106,5 +106,5 @@ pass:
     li t4, 0xC0FFEE
 
 end:
-    wfi
+    ebreak
     

@@ -44,7 +44,6 @@ loop:
     jal  print            # $4C : 008000ef
 
     j die                 # $50 : 0480006f
-        
 
     .data
 space:.asciz  " "
@@ -75,3 +74,5 @@ out:
     jr    ra              # $94 : 00008067
     
 die:
+    ebreak
+    

@@ -1,3 +1,6 @@
+# Disable to see directories left and entered during processing
+MAKEFLAGS += --no-print-directory
+
 GHDL    ?= ghdl
 STD     ?= 08
 WORK    ?= work
@@ -11,38 +14,57 @@ ASFLAGS := -march=rv32i -mabi=ilp32
 LD      := riscv64-unknown-elf-ld
 OBJCOPY := riscv64-unknown-elf-objcopy
 
-RARS     := java -jar C:\rars.jar
+JAVA    ?= java
+PYTHON  ?= python
+
+RARS_JAR := C:\rars_tracer.jar
+
+RARS     := java -jar $(RARS_JAR)
 RARS_NC  ?= nc
 RARS_HEX ?= HexText
+
+SIM_TIMEOUT ?= 30
+MAX_MISMATCHES ?= 2
+
+GHDL_TB     ?= tb_processor
+GHDL_TB_VHD ?= ./test/tb_processor.vhd
+
+# NOTE: add testbench generics here as needed
+# e.g., GHDL_GENERIC_ARGS='--generic=IMEM_HEX="binary/foo_i.hex" --generic=DMEM_HEX="binary/foo_d.hex"'
+GHDL_GENERIC_ARGS ?=
 
 # GHDL's library index file for VHDL-2008
 WORK_CF  := work-obj08.cf
 
 ifeq ($(OS),Windows_NT)
-    IS_WINDOWS := 1
+IS_WINDOWS := 1
 else
-    IS_WINDOWS := 0
+IS_WINDOWS := 0
 endif
 
 ifeq ($(IS_WINDOWS),1)
-    define RM
+define RM
 powershell -NoProfile -Command "Remove-Item '$(1)' -Force -ErrorAction SilentlyContinue"
-    endef
+endef
 else
-    define RM
+define RM
 rm -f $(1)
-    endef
+endef
 endif
 
 ifeq ($(IS_WINDOWS),1)
-    define TOUCH
+define TOUCH
 powershell -NoProfile -Command "New-Item -ItemType File -Path '$(1)' -Force | Out-Null"
-    endef
+endef
 else
-    define TOUCH
+define TOUCH
 touch $(1)
-    endef
+endef
 endif
+
+define addslash
+$(if $(filter %/,$(1)),$(1),$(1)/)
+endef
 
 
 SOURCE := \
@@ -71,47 +93,78 @@ SOURCE := \
 
 ASSEMBLY_DIR := ./riscv
 BINARY_DIR   := ./binary
+TRACE_DIR    ?= ./trace
 
-ASSEMBLY  := $(wildcard $(ASSEMBLY_DIR)/*.s)
-IHEXFILES := $(patsubst $(ASSEMBLY_DIR)/%.s,$(BINARY_DIR)/%_i.hex,$(ASSEMBLY))
-DHEXFILES := $(patsubst $(ASSEMBLY_DIR)/%.s,$(BINARY_DIR)/%_d.hex,$(ASSEMBLY))
+ASSEMBLY   := $(wildcard $(ASSEMBLY_DIR)/*.s)
+IHEXFILES  := $(patsubst $(ASSEMBLY_DIR)/%.s,$(BINARY_DIR)/%_i.hex,$(ASSEMBLY))
+DHEXFILES  := $(patsubst $(ASSEMBLY_DIR)/%.s,$(BINARY_DIR)/%_d.hex,$(ASSEMBLY))
 
-$(BINARY_DIR):
-	mkdir $(BINARY_DIR)
+RARS_TRACEFILES := $(patsubst $(ASSEMBLY_DIR)/%.s,$(TRACE_DIR)/%.rars.trace,$(ASSEMBLY))
+GHDL_TRACEFILES := $(patsubst $(ASSEMBLY_DIR)/%.s,$(TRACE_DIR)/%.ghdl.trace,$(ASSEMBLY))
 
-.PHONY: setup verify tests hex \
+TB_BINARY_DIR := $(call addslash,$(BINARY_DIR))
+TB_TRACE_DIR  := $(call addslash,$(TRACE_DIR))
+
+.PHONY: setup verify tests hex sim sim_all \
 	test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_register_file test_control_unit test_processor
-
-# suppress "Entering/Leaving directory"
-# MAKEFLAGS += --no-print-directory
 
 setup: $(WORK_CF)
 
-assemble: $(OBJECTS)
-
-$(OBJECTS_DIR)/%.o: $(ASSEMBLY_DIR)/%.s
-	$(AS) $(ASFLAGS) -o $@ $<
-
 hex: $(IHEXFILES) $(DHEXFILES)
-
-$(BINARY_DIR)/%_i.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
-	$(RARS) $(RARS_NC) a dump .text $(RARS_HEX) $@ $<
-
-$(BINARY_DIR)/%_d.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
-	$(call TOUCH,$@)
-	$(RARS) $(RARS_NC) a dump .data $(RARS_HEX) $@ $<
-
 
 clean:
 	$(call RM,binary/*_i.hex)
 	$(call RM,binary/*_d.hex)
 	$(call RM,binary/*.o)
+	$(call RM,trace/*.trace)
 	$(call RM,work-obj08.cf)
 
-
-# Re-analyze the whole design if any source changes
 $(WORK_CF): $(SOURCE)
 	$(ANALYZE) $(SOURCE)
+
+$(BINARY_DIR):
+	mkdir $(BINARY_DIR)
+
+$(BINARY_DIR)/%_i.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
+	$(RARS) a dump .text $(RARS_HEX) $@ $<
+
+$(BINARY_DIR)/%_d.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
+	$(call TOUCH,$@)
+	$(RARS) a dump .data $(RARS_HEX) $@ $<
+
+$(TRACE_DIR):
+	mkdir $(TRACE_DIR)
+
+$(TRACE_DIR)/%.rars.trace: $(ASSEMBLY_DIR)/%.s | $(TRACE_DIR)
+	@$(PYTHON) tools/rars_sim.py --jar "$(RARS_JAR)" --asm "$<" --trace "$@" --timeout "$(SIM_TIMEOUT)"
+
+$(TRACE_DIR)/%.ghdl.trace: $(ASSEMBLY_DIR)/%.s $(GHDL_TB_VHD) $(WORK_CF) $(BINARY_DIR)/%_i.hex $(BINARY_DIR)/%_d.hex | $(TRACE_DIR)
+	@$(call TOUCH,$@)
+	@$(ANALYZE) $(GHDL_TB_VHD)
+	@$(RUN) $(GHDL_TB) \
+		-gBINARY_DIRECTORY="$(TB_BINARY_DIR)" \
+		-gTRACE_DIRECTORY="$(TB_TRACE_DIR)" \
+		-gTEST_FILE="$*" \
+		--vcd="$(TRACE_DIR)/$*.ghdl.vcd" \
+		$(GHDL_GENERIC_ARGS) \
+		> "$(TRACE_DIR)/$*.ghdl.log" 2>&1
+
+simulate:
+	$(if $(strip $(ASM)),,$(error Usage: make simulate ASM=$(ASSEMBLY_DIR)/file.s [RARS_JAR=...] [SIM_TIMEOUT=...] [MAX_MISMATCHES=...] [GHDL_GENERIC_ARGS=...]))
+	@$(MAKE) setup
+	@$(MAKE) "$(BINARY_DIR)/$(basename $(notdir $(ASM)))_i.hex" "$(BINARY_DIR)/$(basename $(notdir $(ASM)))_d.hex"
+	@-$(MAKE) "$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.trace"
+	@$(PYTHON) tools/simulator.py \
+		--jar "$(RARS_JAR)" \
+		--asm "$(ASM)" \
+		--trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).rars.trace" \
+		--timeout "$(SIM_TIMEOUT)" \
+		--ghdl-trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.trace" \
+		--max-mismatches "$(MAX_MISMATCHES)" \
+		--summary
+
+simulate_all: $(RARS_TRACEFILES) $(GHDL_TRACEFILES)
+	@:
 
 tests: test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_register_file test_control_unit test_processor
 

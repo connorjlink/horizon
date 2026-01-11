@@ -13,9 +13,16 @@ use work.types.all;
 
 entity tb_processor is
     generic(
-        CLOCK_HALF_PERIOD : time    := 10 ns;
-        DATA_WIDTH        : integer := 32;
-        IS_DEBUG          : boolean := false
+        constant CLOCK_HALF_PERIOD : time    := 10 ns;
+        constant DATA_WIDTH        : integer := 32;
+        constant IS_DEBUG          : boolean := false;
+        constant BINARY_DIRECTORY  : string;
+        constant TRACE_DIRECTORY   : string;
+        constant TEST_FILE         : string;
+        constant HEX_FILE          : string  := BINARY_DIRECTORY & TEST_FILE;
+        constant TRACE_FILE        : string  := TRACE_DIRECTORY & TEST_FILE & ".ghdl.trace";
+        constant DATA_FILE         : string  := HEX_FILE & "_d.hex";
+        constant INSTRUCTION_FILE  : string  := HEX_FILE & "_i.hex"
     );
 end tb_processor;
 
@@ -25,14 +32,17 @@ constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
 
 -- Testbench signals
 signal s_Clock, s_Reset : std_logic := '0';
+signal s_TraceEnable    : std_logic := '0';
 
 -- Stimulus signals
-signal s_iInstructionLoad : std_logic := '0';
-signal s_iInstructionAddress, s_iInstructionExternal : std_logic_vector(31 downto 0) := (others => '0');
-signal s_iDataLoad : std_logic := '0';
-signal s_iDataAddress, s_iDataExternal : std_logic_vector(31 downto 0) := (others => '0');
-signal s_oALUOutput : std_logic_vector(31 downto 0);
-signal s_oHalt : std_logic;
+signal s_iInstructionLoad     : std_logic := '0';
+signal s_iInstructionAddress  : std_logic_vector(31 downto 0) := (others => '0');
+signal s_iInstructionExternal : std_logic_vector(31 downto 0) := (others => '0');
+signal s_iDataLoad            : std_logic := '0';
+signal s_iDataAddress         : std_logic_vector(31 downto 0) := (others => '0');
+signal s_iDataExternal        : std_logic_vector(31 downto 0) := (others => '0');
+signal s_oALUOutput           : std_logic_vector(31 downto 0);
+signal s_oHalt                : std_logic;
 
 procedure LoadInstructionMemory(
     signal   i_Clock               : in  std_logic;
@@ -82,6 +92,7 @@ end procedure;
 
 procedure LoadDataMemory(
     signal   i_Clock       : in  std_logic;
+    signal   o_DataLoad    : out std_logic;
     signal   o_DataAddress : out std_logic_vector(31 downto 0);
     signal   o_DataExternal: out std_logic_vector(31 downto 0);
     constant FileName      : in  string;
@@ -94,6 +105,8 @@ procedure LoadDataMemory(
 begin
 
     v_Address := unsigned(BaseAddress);
+
+    o_DataLoad <= '1';
 
     while not endfile(f_File) loop
         readline(f_File, v_Line);
@@ -117,8 +130,9 @@ begin
 
     end loop;
 
-    o_DataAddress   <= (others => '0');
-    o_DataExternal  <= (others => '0');
+    o_DataLoad     <= '0';
+    o_DataAddress  <= (others => '0');
+    o_DataExternal <= (others => '0');
 
 end procedure;
 
@@ -159,20 +173,103 @@ begin
         wait;
     end process;
 
+    p_Trace: process
+        file f_Trace      : text open write_mode is TRACE_FILE;
+        variable v_Line   : line;
+        variable v_Cycles : integer := 0;
+
+        alias a_DataMemoryWriteEnable is <<signal DUT.s_DataMemoryWriteEnable : std_logic>>;
+        alias a_DataMemoryAddress     is <<signal DUT.s_DataMemoryAddress     : std_logic_vector(31 downto 0)>>;
+        alias a_DataMemoryData        is <<signal DUT.s_DataMemoryData        : std_logic_vector(DATA_WIDTH-1 downto 0)>>;
+
+        alias a_RegisterFileWriteEnable is <<signal DUT.s_RegisterFileWriteEnable : std_logic>>;
+        alias a_RegisterFileSelect      is <<signal DUT.s_RegisterFileSelect      : std_logic_vector(4 downto 0)>>;
+        alias a_RegisterFileData        is <<signal DUT.s_RegisterFileData        : std_logic_vector(DATA_WIDTH-1 downto 0)>>;
+
+        alias a_InstructionPointer is <<signal DUT.s_IPAddress : std_logic_vector(31 downto 0)>>;
+
+    begin
+
+        wait until rising_edge(s_Clock);
+
+        loop
+            wait until rising_edge(s_Clock);
+
+            if (s_Reset = '0') and (s_TraceEnable = '1') then
+                write(v_Line, string'("Instruction Pointer: 0x"));
+                hwrite(v_Line, a_InstructionPointer);
+                writeline(f_Trace, v_Line);
+
+                if (a_RegisterFileWriteEnable = '1') then
+                    write(v_Line, string'("In clock cycle: "));
+                    write(v_Line, v_Cycles);
+                    writeline(f_Trace, v_Line);
+
+                    write(v_Line, string'("Register Write to Reg: 0x"));
+                    hwrite(v_Line, a_RegisterFileSelect);
+                    write(v_Line, string'(" Val: 0x"));
+                    hwrite(v_Line, a_RegisterFileData);
+                    writeline(f_Trace, v_Line);
+                end if;
+
+                if (a_DataMemoryWriteEnable = '1') then
+                    write(v_Line, string'("In clock cycle: "));
+                    write(v_Line, v_Cycles);
+                    writeline(f_Trace, v_Line);
+
+                    write(v_Line, string'("Memory Write to Addr: 0x"));
+                    hwrite(v_Line, a_DataMemoryAddress);
+                    write(v_Line, string'(" Val: 0x"));
+                    hwrite(v_Line, a_DataMemoryData);
+                    writeline(f_Trace, v_Line);
+                end if;
+
+                if (s_oHalt = '1') then
+                    write(v_Line, string'("Execution stopped at cycle "));
+                    write(v_Line, v_Cycles);
+                    writeline(f_Trace, v_Line);
+                    file_close(f_Trace);
+                    finish;
+                end if;
+
+                v_Cycles := v_Cycles + 1;
+
+            end if;
+
+        end loop;
+
+    end process;
 
     p_Stimulus: process
-        constant c_HexFile               : string := "binary/fibonacci";
-        constant c_DataMemoryFile        : string := c_HexFile & "_d.hex";
-        constant c_InstructionMemoryFile : string := c_HexFile & "_i.hex";
-        variable v_Cycles  : integer := 0;
+        constant c_MaximumCycles : integer := 5000;
+        variable v_Cycles        : integer := 0;
     begin
         -- Await reset and stabilization; trigger off-edge
         wait for CLOCK_HALF_PERIOD;
         wait for CLOCK_HALF_PERIOD / 2;
 
         -- Load processor instruction and data memories with target program
-        LoadInstructionMemory(s_Clock, s_iInstructionLoad, s_iInstructionAddress, s_iInstructionExternal, c_InstructionMemoryFile, x"00400000");
-        LoadDataMemory(s_Clock, s_iInstructionAddress, s_iInstructionExternal, c_DataMemoryFile, x"10010000");
+        LoadInstructionMemory(
+            s_Clock,
+            s_iInstructionLoad,
+            s_iInstructionAddress,
+            s_iInstructionExternal,
+            INSTRUCTION_FILE ,
+            x"00400000"
+        );
+
+        LoadDataMemory(
+            s_Clock,
+            s_iDataLoad,
+            s_iDataAddress,
+            s_iDataExternal,
+            DATA_FILE ,
+            x"10010000"
+        );
+
+        s_TraceEnable <= '1';
+
+        report to_string(s_oHalt) & " - Beginning program execution." severity note;
 
         while s_oHalt = '0' loop
             wait until rising_edge(s_Clock);
@@ -182,7 +279,12 @@ begin
                 report "Simulation running... (cycle count: " & integer'image(v_Cycles) & ")" severity note;
             end if;
 
+            assert v_Cycles < c_MaximumCycles
+                report "Maximum cycle count (" & integer'image(c_MaximumCycles) & ") exceeded; simulation stopped." severity failure;
+
         end loop;
+
+        s_TraceEnable <= '0';
 
         finish;
 

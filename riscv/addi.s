@@ -14,4 +14,4 @@ addi  x7,  x0,  7
 addi  x8,  x0,  8
 addi  x9,  x0,  9
 addi  x10, x0,  10
-wfi
+ebreak

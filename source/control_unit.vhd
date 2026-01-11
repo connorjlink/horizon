@@ -15,8 +15,8 @@ entity control_unit is
         i_Clock               : in  std_logic;
         i_Reset               : in  std_logic;
         i_Instruction         : in  std_logic_vector(31 downto 0);
-        o_MemoryWriteEnableEnable   : out std_logic;
-        o_RegisterWriteEnableEnable : out std_logic;
+        o_MemoryWriteEnable   : out std_logic;
+        o_RegisterWriteEnable : out std_logic;
         o_RegisterSource      : out rf_source_t;
         o_ALUSource           : out alu_source_t;
         o_ALUOperator         : out alu_operator_t;
@@ -38,15 +38,15 @@ end control_unit;
 architecture implementation of control_unit is
 
 -- Signals to hold the results from the decoder
-signal s_decOpcode : std_logic_vector(6 downto 0);
-signal s_decFunc3  : std_logic_vector(2 downto 0);
-signal s_decFunc7  : std_logic_vector(6 downto 0);
-signal s_deciImmediate   : std_logic_vector(11 downto 0);
-signal s_decsImmediate   : std_logic_vector(11 downto 0);
-signal s_decbImmediate   : std_logic_vector(12 downto 0);
-signal s_decuImmediate   : std_logic_vector(31 downto 12);
-signal s_decjImmediate   : std_logic_vector(20 downto 0);
-signal s_dechImmediate   : std_logic_vector(4 downto 0);
+signal s_decOpcode     : std_logic_vector(6 downto 0);
+signal s_decFunc3      : std_logic_vector(2 downto 0);
+signal s_decFunc7      : std_logic_vector(6 downto 0);
+signal s_deciImmediate : std_logic_vector(11 downto 0);
+signal s_decsImmediate : std_logic_vector(11 downto 0);
+signal s_decbImmediate : std_logic_vector(12 downto 0);
+signal s_decuImmediate : std_logic_vector(31 downto 12);
+signal s_decjImmediate : std_logic_vector(20 downto 0);
+signal s_dechImmediate : std_logic_vector(4 downto 0);
 
 -- Signals to hold the results from the immediate extenders
 signal s_extiImmediate : std_logic_vector(31 downto 0);
@@ -130,12 +130,12 @@ begin
             o_RS2         => o_RS2,
             o_Func3       => s_decFunc3,
             o_Func7       => s_decFunc7,
-            o_iImmediate        => s_deciImmediate,
-            o_sImmediate        => s_decsImmediate,
-            o_bImmediate        => s_decbImmediate,
-            o_uImmediate        => s_decuImmediate,
-            o_jImmediate        => s_decjImmediate,
-            o_hImmediate        => s_dechImmediate
+            o_iImmediate  => s_deciImmediate,
+            o_sImmediate  => s_decsImmediate,
+            o_bImmediate  => s_decbImmediate,
+            o_uImmediate  => s_decuImmediate,
+            o_jImmediate  => s_decjImmediate,
+            o_hImmediate  => s_dechImmediate
         );
 
     process(
@@ -144,24 +144,24 @@ begin
         variable v_IsBranch            : std_logic;
         variable v_Break               : std_logic;
         variable v_IsSignExtend        : std_logic;
-        variable v_MemoryWriteEnableEnable   : std_logic;
-        variable v_RegisterWriteEnableEnable : std_logic;
+        variable v_MemoryWriteEnable   : std_logic;
+        variable v_RegisterWriteEnable : std_logic;
         variable v_ALUSource           : alu_source_t;
         variable v_RegisterSource      : rf_source_t;
         variable v_ALUOperator         : alu_operator_t;
-        variable v_BranchOperator      : branch_operator_t := BRANCH_NONE;
-        variable v_MemoryWidth         : data_width_t := WORD_TYPE;
-        variable v_BranchMode          : branch_mode_t := BRANCHMODE_NONE;
+        variable v_BranchOperator      : branch_operator_t;
+        variable v_MemoryWidth         : data_width_t;
+        variable v_BranchMode          : branch_mode_t;
         variable v_Immediate           : std_logic_vector(31 downto 0);
-        variable v_IPToALU             : std_logic; -- 0: no, 1: yes
+        variable v_IPToALU             : std_logic;
 
     begin 
         if i_Reset = '0' then
             v_IsBranch            := '0';
             v_Break               := '0';
             v_IsSignExtend        := '1'; -- 0: zero-extend, 1: sign-extend
-            v_MemoryWriteEnableEnable   := '0';
-            v_RegisterWriteEnableEnable := '0';
+            v_MemoryWriteEnable   := '0';
+            v_RegisterWriteEnable := '0';
             v_ALUSource           := ALUSOURCE_REGISTER; -- default is to put DS1 and DS2 into the ALU
             v_RegisterSource      := RFSOURCE_FROMALU;
             v_ALUOperator         := ADD_OPERATOR;
@@ -169,14 +169,14 @@ begin
             v_MemoryWidth         := WORD_TYPE;
             v_Immediate           := 32x"0";
             v_BranchMode          := BRANCHMODE_JAL_OR_BCC;
-            v_IPToALU             := '0';
+            v_IPToALU             := '0'; -- 0: no, 1: yes
 
             case s_decOpcode is 
                 when 7b"1101111" => -- J-Format
                     -- jal    - rd <= linkAddr
                     v_Immediate := s_extjImmediate;
                     v_BranchOperator := JAL_TYPE;
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     v_RegisterSource := RFSOURCE_FROMNEXTIP;
                     v_BranchMode := BRANCHMODE_JAL_OR_BCC;
                     -- NOTE: not setting the branch flag to indicate that this is a jump instead of a branch
@@ -189,7 +189,7 @@ begin
                     -- jalr - func3=000 - rd <= linkAddr
                     v_Immediate := s_extiImmediate;
                     v_BranchOperator := JALR_TYPE;
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     v_RegisterSource := RFSOURCE_FROMNEXTIP;
                     v_BranchMode := BRANCHMODE_JALR;
                     -- NOTE: not setting the branch flag to indicate that this is a jump instead of a branch
@@ -199,7 +199,7 @@ begin
                     end if;
 
                 when 7b"0010011" => -- I-format
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     v_ALUSource := ALUSOURCE_IMMEDIATE;
                     v_RegisterSource := RFSOURCE_FROMALU;
                     v_Immediate := s_extiImmediate;
@@ -283,7 +283,7 @@ begin
                     end case;
 
                 when 7b"0000011" => -- I-Format? More
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     v_RegisterSource := RFSOURCE_FROMRAM;
                     v_ALUSource := ALUSOURCE_IMMEDIATE;
                     v_Immediate := s_extiImmediate;
@@ -364,7 +364,7 @@ begin
                     end case;
 
                 when 7b"0100011" => -- S-Format
-                    v_MemoryWriteEnableEnable := '1';
+                    v_MemoryWriteEnable := '1';
                     v_ALUSource := ALUSOURCE_IMMEDIATE;
                     v_Immediate := s_extsImmediate;
 
@@ -407,7 +407,7 @@ begin
                     end case;
 
                 when 7b"0110011" => -- R-format
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     v_RegisterSource := RFSOURCE_FROMALU;
                     v_ALUSource := ALUSOURCE_REGISTER;
 
@@ -561,7 +561,7 @@ begin
                     v_Immediate := s_extuImmediate;
                     v_RegisterSource := RFSOURCE_FROMIMMEDIATE;
                     v_ALUSource := ALUSOURCE_BIGIMMEDIATE;
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     if ENABLE_DEBUG then
                         report "lui" severity note;
                     end if;
@@ -572,7 +572,7 @@ begin
                     v_RegisterSource := RFSOURCE_FROMALU;
                     v_ALUSource := ALUSOURCE_IMMEDIATE;
                     v_IPToALU := '1';
-                    v_RegisterWriteEnableEnable := '1';
+                    v_RegisterWriteEnable := '1';
                     if ENABLE_DEBUG then
                         report "auipc" severity note;
                     end if;
@@ -583,12 +583,12 @@ begin
                         report "fence" severity note;
                     end if;
 
-                when 7b"1110011" => -- ecall/wfi
+                when 7b"1110011" => -- ecall/ebreak
                     if i_Instruction = 32b"00000000000100000000000001110011" then
-                        -- wfi
+                        -- ebreak
                         v_Break := '1';
                         if ENABLE_DEBUG then
-                            report "wfi" severity note; 
+                            report "ebreak" severity note; 
                         end if;
                     else
                         -- ecall
@@ -608,8 +608,8 @@ begin
             v_IsBranch            := '0';
             v_Break               := '0';
             v_IsSignExtend        := '1'; -- default case is sign extension
-            v_MemoryWriteEnableEnable   := '0';
-            v_RegisterWriteEnableEnable := '0';
+            v_MemoryWriteEnable   := '0';
+            v_RegisterWriteEnable := '0';
             v_RegisterSource      := RFSOURCE_FROMALU;
             v_ALUSource           := ALUSOURCE_REGISTER;
             v_ALUOperator         := ADD_OPERATOR;
@@ -624,8 +624,8 @@ begin
         o_Break               <= v_Break;
         o_IsSignExtend        <= v_IsSignExtend;
         s_SignExtend          <= v_IsSignExtend;
-        o_MemoryWriteEnableEnable   <= v_MemoryWriteEnableEnable;
-        o_RegisterWriteEnableEnable <= v_RegisterWriteEnableEnable;
+        o_MemoryWriteEnable   <= v_MemoryWriteEnable;
+        o_RegisterWriteEnable <= v_RegisterWriteEnable;
         o_RegisterSource      <= v_RegisterSource;
         o_ALUSource           <= v_ALUSource;
         o_ALUOperator         <= v_ALUOperator;

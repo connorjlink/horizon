@@ -137,4 +137,4 @@ pass:
                   # 00de8e93 ; addi x29, x29, 13
 
 end:
-    wfi
+    ebreak

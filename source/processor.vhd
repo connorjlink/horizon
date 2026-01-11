@@ -40,8 +40,6 @@ signal s_InstructionMemoryAddress : std_logic_vector(N-1 downto 0); -- instructi
 signal s_NextInstructionAddress   : std_logic_vector(N-1 downto 0); -- instruction pointer + stride
 signal s_Instruction              : std_logic_vector(N-1 downto 0); -- instruction memory output (fetched)
 
-signal s_Halt : std_logic;
-
 
 -- Signals to hold the intermediate outputs from the register file
 signal s_RS1Data : std_logic_vector(31 downto 0);
@@ -169,7 +167,7 @@ end function;
 begin
 
     -- NOTE: This is probably not the best way to detect a halt condition, but it will at least trap execution when two consecutive illegal instructions retire.
-    s_Halt <= (MEMWB_ID_buf.Break and EXMEM_ID_buf.Break);
+    o_Halt <= (MEMWB_ID_buf.Break and EXMEM_ID_buf.Break);
 
     n_Clock <= not i_Clock;
 
@@ -442,26 +440,26 @@ begin
 
     ControlUnit: entity work.control_unit
         port map(
-            i_Clock                     => i_Clock,
-            i_Reset                     => i_Reset,
-            i_Instruction               => IDEX_IF_raw.Instruction,
-            o_MemoryWriteEnableEnable   => IDEX_ID_raw.MemoryWriteEnable,
-            o_RegisterWriteEnableEnable => IDEX_ID_raw.RegisterWriteEnable,
-            o_RegisterSource            => IDEX_ID_raw.RegisterSource,
-            o_ALUSource                 => IDEX_ID_raw.ALUSource,
-            o_ALUOperator               => IDEX_ID_raw.ALUOperator,
-            o_BranchOperator            => IDEX_ID_raw.BranchOperator,
-            o_MemoryWidth               => IDEX_ID_raw.MemoryWidth,
-            o_BranchMode                => IDEX_ID_raw.BranchMode,
-            o_RD                        => IDEX_ID_raw.RD,
-            o_RS1                       => IDEX_ID_raw.RS1,
-            o_RS2                       => IDEX_ID_raw.RS2,
-            o_Immediate                 => IDEX_ID_raw.Immediate,
-            o_Break                     => IDEX_ID_raw.Break,
-            o_IsBranch                  => IDEX_ID_raw.IsBranch,
-            o_IPToALU                   => IDEX_ID_raw.IPToALU,
-            o_IsStride4                 => IDEX_ID_raw.IsStride4,
-            o_IsSignExtend              => IDEX_ID_raw.IsSignExtend
+            i_Clock               => i_Clock,
+            i_Reset               => i_Reset,
+            i_Instruction         => IDEX_IF_raw.Instruction,
+            o_MemoryWriteEnable   => IDEX_ID_raw.MemoryWriteEnable,
+            o_RegisterWriteEnable => IDEX_ID_raw.RegisterWriteEnable,
+            o_RegisterSource      => IDEX_ID_raw.RegisterSource,
+            o_ALUSource           => IDEX_ID_raw.ALUSource,
+            o_ALUOperator         => IDEX_ID_raw.ALUOperator,
+            o_BranchOperator      => IDEX_ID_raw.BranchOperator,
+            o_MemoryWidth         => IDEX_ID_raw.MemoryWidth,
+            o_BranchMode          => IDEX_ID_raw.BranchMode,
+            o_RD                  => IDEX_ID_raw.RD,
+            o_RS1                 => IDEX_ID_raw.RS1,
+            o_RS2                 => IDEX_ID_raw.RS2,
+            o_Immediate           => IDEX_ID_raw.Immediate,
+            o_Break               => IDEX_ID_raw.Break,
+            o_IsBranch            => IDEX_ID_raw.IsBranch,
+            o_IPToALU             => IDEX_ID_raw.IPToALU,
+            o_IsStride4           => IDEX_ID_raw.IsStride4,
+            o_IsSignExtend        => IDEX_ID_raw.IsSignExtend
         );
 
     IDEX_ID_raw.DS1 <= s_RS1Data;
@@ -477,7 +475,7 @@ begin
     with MEMWB_ID_buf.RegisterSource select
         s_RegisterFileData <=
             MEMWB_MEM_buf.Data       when RFSOURCE_FROMRAM,
-            MEMWB_EX_buf.Result           when RFSOURCE_FROMALU,
+            MEMWB_EX_buf.Result      when RFSOURCE_FROMALU,
             MEMWB_IF_buf.LinkAddress when RFSOURCE_FROMNEXTIP,
             MEMWB_ID_buf.Immediate   when RFSOURCE_FROMIMMEDIATE,
             (others => '0')          when others;

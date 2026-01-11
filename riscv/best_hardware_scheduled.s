@@ -20,5 +20,5 @@ start:
     addi a5, a4, 1
     addi a6, a5, 1
     addi a7, a6, 1
-    wfi
+    ebreak
     
