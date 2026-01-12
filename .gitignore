@@ -1,5 +1,1 @@
-/riscv/grendel.s
-/riscv/addi_dependency.s
-/riscv/branch.s
-
-./work-obj08.cf
+work-obj08.cf
