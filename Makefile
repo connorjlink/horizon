@@ -87,6 +87,7 @@ SOURCE := \
 	./source/control_unit.vhd \
 	./source/branch_unit.vhd \
 	./source/multiplier.vhd \
+	./source/divider.vhd \
 	./source/forwarding_unit.vhd \
 	./source/hazard_unit.vhd \
 	./source/processor.vhd
@@ -106,7 +107,7 @@ TB_BINARY_DIR := $(call addslash,$(BINARY_DIR))
 TB_TRACE_DIR  := $(call addslash,$(TRACE_DIR))
 
 .PHONY: setup verify tests hex sim sim_all \
-	test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_register_file test_control_unit test_processor
+	test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_divider test_register_file test_control_unit test_processor
 
 setup: $(WORK_CF)
 
@@ -177,7 +178,7 @@ ghdl:
 		$(GHDL_GENERIC_ARGS)
 	@$(call CAT,$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.log)
 
-tests: test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_register_file test_control_unit test_processor
+tests: test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_divider test_register_file test_control_unit test_processor
 
 verify: setup tests
 
@@ -252,6 +253,10 @@ test_multiplexer_2to1: setup ./test/tb_multiplexer_2to1.vhd
 test_multiplier: setup ./test/tb_multiplier.vhd
 	$(ANALYZE) ./test/tb_multiplier.vhd
 	$(RUN) tb_multiplier
+
+test_divider: setup ./test/tb_divider.vhd
+	$(ANALYZE) ./test/tb_divider.vhd
+	$(RUN) tb_divider
 
 test_register_file: setup ./test/tb_register_file.vhd
 	$(ANALYZE) ./test/tb_register_file.vhd
