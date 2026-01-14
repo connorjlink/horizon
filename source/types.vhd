@@ -58,6 +58,10 @@ type alu_operator_t is (
     REMU_OPERATOR
 );
 
+pure function IsMulticycleALUOperator(
+    constant op : alu_operator_t
+) return boolean;
+
 -- Corresponding to each ALU source
 type alu_source_t is (
     ALUSOURCE_REGISTER,
@@ -222,3 +226,24 @@ constant WB_NOP : WB_record_t := (
 ------------------------------------------------------
 
 end package types;
+
+package body types is
+
+pure function IsMulticycleALUOperator(constant op : alu_operator_t) return boolean is
+begin
+
+    case op is
+        when DIV_OPERATOR |
+             DIVU_OPERATOR |
+             REM_OPERATOR |
+             REMU_OPERATOR =>
+            return true;
+
+        when others =>
+            return false;
+
+    end case;
+
+end function;
+
+end package body types;

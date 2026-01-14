@@ -51,6 +51,7 @@ signal s_RealALUOperand1 : std_logic_vector(31 downto 0);
 signal s_ALUOperand2     : std_logic_vector(31 downto 0);
 signal s_RealALUOperand2 : std_logic_vector(31 downto 0);
 signal s_ALUDone         : std_logic;
+signal s_ALUBusy         : std_logic;
 
 -- Signals to handle the intputs/outputs of the branch unit
 signal s_BranchOperand1 : std_logic_vector(31 downto 0);
@@ -109,6 +110,8 @@ signal WB_WB_raw,     WB_WB_buf     : WB_record_t;
 signal s_IFID_Stall,  s_IFID_Flush  : std_logic := '0';
 signal s_IDEX_Stall,  s_IDEX_Flush  : std_logic := '0';
 signal s_EXMEM_Stall, s_EXMEM_Flush : std_logic := '0';
+
+signal s_EXMEM_MemoryWriteEnable : std_logic := '0';
 ----------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------
@@ -188,7 +191,7 @@ begin
     ---- Memory Subsystem
     -----------------------------------------------------
 
-    InstructionMemory: entity work.memory
+    e_InstructionMemory: entity work.memory
         generic map(
             ADDRESS_WIDTH => ADDRESS_WIDTH,
             DATA_WIDTH => N
@@ -201,7 +204,7 @@ begin
             o_Data        => s_Instruction
         );
   
-    DataMemory: entity work.memory
+    e_DataMemory: entity work.memory
         generic map(
             ADDRESS_WIDTH => ADDRESS_WIDTH,
             DATA_WIDTH => N
@@ -224,12 +227,12 @@ begin
     ---- Instruction -> Control Unit stage register(s)
     -----------------------------------------------------
 
-    IFID_RegisterIF: entity work.register_IF
+    e_IFID_RegisterIF: entity work.register_IF
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_IFID_Stall or not s_ALUDone,
-            i_Flush   => s_IFID_Flush or not s_ALUDone,
+            i_Stall   => s_IFID_Stall or s_ALUBusy,
+            i_Flush   => s_IFID_Flush,
             i_Signals => IFID_IF_raw,
             o_Signals => IFID_IF_buf
         );
@@ -243,21 +246,21 @@ begin
     ---- Control Unit -> Arithmetic Logic Unit stage register(s)
     -----------------------------------------------------
 
-    IDEX_RegisterIF: entity work.register_IF
+    e_IDEX_RegisterIF: entity work.register_IF
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_IDEX_Stall,
+            i_Stall   => s_IDEX_Stall or s_ALUBusy,
             i_Flush   => s_IDEX_Flush,
             i_Signals => IDEX_IF_raw,
             o_Signals => IDEX_IF_buf
         );
 
-    IDEX_Register_ID: entity work.register_ID
+    e_IDEX_Register_ID: entity work.register_ID
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_IDEX_Stall,
+            i_Stall   => s_IDEX_Stall or s_ALUBusy,
             i_Flush   => s_IDEX_Flush,
             i_Signals => IDEX_ID_raw,
             o_Signals => IDEX_ID_buf
@@ -273,31 +276,31 @@ begin
     ---- ALU -> Memory stage register(s)
     -----------------------------------------------------
 
-    EXMEM_RegisterIF: entity work.register_IF
+    e_EXMEM_RegisterIF: entity work.register_IF
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_EXMEM_Stall,
+            i_Stall   => s_EXMEM_Stall or s_ALUBusy,
             i_Flush   => s_EXMEM_Flush,
             i_Signals => EXMEM_IF_raw,
             o_Signals => EXMEM_IF_buf
         );
 
-    EXMEM_Register_ID: entity work.register_ID
+    e_EXMEM_Register_ID: entity work.register_ID
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_EXMEM_Stall,
+            i_Stall   => s_EXMEM_Stall or s_ALUBusy,
             i_Flush   => s_EXMEM_Flush,
             i_Signals => EXMEM_ID_raw,
             o_Signals => EXMEM_ID_buf
         );
 
-    EXMEM_Register_EX: entity work.register_EX
+    e_EXMEM_Register_EX: entity work.register_EX
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => s_EXMEM_Stall,
+            i_Stall   => s_EXMEM_Stall or s_ALUBusy,
             i_Flush   => s_EXMEM_Flush,
             i_Signals => EXMEM_EX_raw,
             o_Signals => EXMEM_EX_buf
@@ -314,42 +317,42 @@ begin
     ---- Memory -> Register File stage register(s)
     -----------------------------------------------------
 
-    MEMWB_Register_IF: entity work.register_IF
+    e_MEMWB_Register_IF: entity work.register_IF
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => '0',
+            i_Stall   => s_ALUBusy,
             i_Flush   => '0',
             i_Signals => MEMWB_IF_raw,
             o_Signals => MEMWB_IF_buf
         );
 
-    MEMWB_Register_ID: entity work.register_ID
+    e_MEMWB_Register_ID: entity work.register_ID
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => '0',
+            i_Stall   => s_ALUBusy,
             i_Flush   => '0',
             i_Signals => MEMWB_ID_raw,
             o_Signals => MEMWB_ID_buf
         );
 
-    MEMWB_RegisterEX: entity work.register_EX
+    e_MEMWB_RegisterEX: entity work.register_EX
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => '0',
+            i_Stall   => s_ALUBusy,
             i_Flush   => '0',
             i_Signals => MEMWB_EX_raw,
             o_Signals => MEMWB_EX_buf
         ); 
     
 
-    MEMWB_RegisterMEM: entity work.register_MEM
+    e_MEMWB_RegisterMEM: entity work.register_MEM
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => '0',
+            i_Stall   => s_ALUBusy,
             i_Flush   => '0',
             i_Signals => MEMWB_MEM_raw,
             o_Signals => MEMWB_MEM_buf
@@ -367,11 +370,11 @@ begin
     WB_WB_raw.Forward     <= s_ForwardMemData;
     WB_WB_raw.MemoryWidth <= MEMWB_ID_buf.MemoryWidth;
 
-    WBWB_RegisterWB: entity work.register_WB
+    e_WBWB_RegisterWB: entity work.register_WB
         port map(
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
-            i_Stall   => '0',
+            i_Stall   => s_ALUBusy,
             i_Flush   => '0',
             i_Signals => WB_WB_raw,
             o_Signals => WB_WB_buf
@@ -394,14 +397,14 @@ begin
         '1' when (IDEX_ID_buf.BranchMode = BRANCHMODE_JAL_OR_BCC and IDEX_ID_buf.IsBranch = '0') else
         (s_BranchTaken and IDEX_ID_buf.IsBranch);
 
-    InstructionPointer: entity work.instruction_pointer
+    e_InstructionPointer: entity work.instruction_pointer
         generic map(
             ResetAddress => 32x"00400000"
         )
         port map(
             i_Clock       => i_Clock,
             i_Reset       => i_Reset,
-            i_Stall       => s_IPBreak or s_BranchLoad or not s_ALUDone,
+            i_Stall       => s_IPBreak or s_BranchLoad or s_ALUBusy,
             i_Load        => s_BranchLoad,
             i_LoadAddress => s_BranchAddress,
             i_Stride      => '1', -- IDEX_ID_buf.IsStride4, -- NOTE: This might be 1 pipeline stage too late to increment the correct corresponding amount. But, resolving this requires instruction pre-decoding to compute length, so just assume 4-byte instructions for now
@@ -496,7 +499,7 @@ begin
             (others => '0')          when others;
 
 
-    s_RegisterFileWriteEnable <= MEMWB_ID_buf.RegisterFileWriteEnable;
+    s_RegisterFileWriteEnable <= MEMWB_ID_buf.RegisterFileWriteEnable and not s_ALUBusy;
     s_RegisterFileSelect <= MEMWB_ID_buf.RD;
 
     e_RegisterFile: entity work.register_file
@@ -562,6 +565,9 @@ begin
             o_Done     => s_ALUDone
         );
 
+    s_ALUBusy <= '1' when IsMulticycleALUOperator(IDEX_ID_buf.ALUOperator) and (s_ALUDone = '0') else 
+                 '0';
+
     o_ALUOutput <= EXMEM_EX_raw.Result;
 
     -----------------------------------------------------
@@ -581,14 +587,16 @@ begin
             i_DataExternal     when '1',
             s_DataMemoryBuffer when others;
 
+    s_EXMEM_MemoryWriteEnable <= EXMEM_ID_buf.MemoryWriteEnable and not s_ALUBusy;
+
     with i_DataLoad select
         s_DataMemoryWriteEnable <= 
-            '1'                            when '1',
-            EXMEM_ID_buf.MemoryWriteEnable when others;
+            '1'                       when '1',
+            s_EXMEM_MemoryWriteEnable when others;
 
     with WB_WB_buf.Forward select 
         s_ForwardedDMemData <= 
-            ExtendMemoryData(WB_WB_buf.Data, WB_WB_buf.MemoryWidth,    '1', 32)      when FORWARDING_FROMMEM,
+            ExtendMemoryData(WB_WB_buf.Data,      WB_WB_buf.MemoryWidth,    '1', 32) when FORWARDING_FROMMEM,
             ExtendMemoryData(MEMWB_EX_buf.Result, MEMWB_ID_buf.MemoryWidth, '1', 32) when FORWARDING_FROMEXMEM_ALU,
             ExtendMemoryData(WB_WB_buf.Result,    WB_WB_buf.MemoryWidth,    '1', 32) when FORWARDING_FROMMEMWB_ALU,
             (others => '0')   when others;
@@ -667,13 +675,13 @@ begin
             i_EXMEM_RS2                     => EXMEM_ID_buf.RS2,
             i_EXMEM_RD                      => EXMEM_ID_buf.RD,
             i_EXMEM_RegisterFileWriteEnable => EXMEM_ID_buf.RegisterFileWriteEnable,
-            i_EXMEM_MemoryWriteEnable       => EXMEM_ID_buf.MemoryWriteEnable,
+            i_EXMEM_MemoryWriteEnable       => s_EXMEM_MemoryWriteEnable,
             i_EXMEM_IsLoad                  => s_EXMEM_IsLoad,
 
-            i_MEMWB_RD                  => MEMWB_ID_buf.RD,
+            i_MEMWB_RD                      => MEMWB_ID_buf.RD,
             i_MEMWB_RegisterFileWriteEnable => MEMWB_ID_buf.RegisterFileWriteEnable,
-            i_MEMWB_MemoryWriteEnable   => MEMWB_ID_buf.MemoryWriteEnable,
-            i_MEMWB_IsLoad              => s_MEMWB_IsLoad,
+            i_MEMWB_MemoryWriteEnable       => MEMWB_ID_buf.MemoryWriteEnable,
+            i_MEMWB_IsLoad                  => s_MEMWB_IsLoad,
 
             i_BranchMode            => IDEX_ID_buf.BranchMode,
             i_BranchTaken           => s_BranchTaken,

@@ -49,7 +49,6 @@ signal s_QuotientOut  : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_RemainderOut : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_DividerDone  : std_logic := '0';
 
-
 begin
 
     ------------------------------------------------------
@@ -188,6 +187,9 @@ begin
     with i_Operator select 
         o_Done <=
             s_DividerDone when DIV_OPERATOR,
+            s_DividerDone when DIVU_OPERATOR,
+            s_DividerDone when REM_OPERATOR,
+            s_DividerDone when REMU_OPERATOR,
             '1'           when others;
 
     with i_Operator select 
