@@ -9,6 +9,7 @@ package types is
 -- Generic placeholders to define the bit widths for the architecture
 constant DATA_WIDTH : natural := 32;
 constant ADDRESS_WIDTH : natural := 10;
+constant THREAD_COUNT : natural := 2;
 
 -- Type declaration for the register file storage
 type array_t is array (natural range <>) of std_logic_vector(31 downto 0);
@@ -46,7 +47,15 @@ type alu_operator_t is (
     SRL_OPERATOR,
     SRA_OPERATOR,
     SLT_OPERATOR,
-    SLTU_OPERATOR
+    SLTU_OPERATOR,
+    MUL_OPERATOR,
+    MULH_OPERATOR,
+    MULHSU_OPERATOR,
+    MULHU_OPERATOR,
+    DIV_OPERATOR,
+    DIVU_OPERATOR,
+    REM_OPERATOR,
+    REMU_OPERATOR
 );
 
 -- Corresponding to each ALU source
@@ -80,6 +89,8 @@ type forwarding_path_t is (
     FORWARDING_FROMMEMWB_ALU
 );
 
+------------------------------------------------------
+
 -- Record type declarations for the pipeline setup
 
 ------------------------------------------------------
@@ -90,12 +101,14 @@ type IF_record_t is record
     InstructionAddress : std_logic_vector(31 downto 0);
     LinkAddress        : std_logic_vector(31 downto 0);
     Instruction        : std_logic_vector(31 downto 0);
+    ThreadId           : std_logic;
 end record IF_record_t;
 
 constant IF_NOP : IF_record_t := (
     InstructionAddress => (others => '0'),
     LinkAddress        => (others => '0'),
-    Instruction        => 32x"00000013"
+    Instruction        => 32x"00000013",
+    ThreadId           => '0'
 );
 
 ------------------------------------------------------

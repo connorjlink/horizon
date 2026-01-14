@@ -36,12 +36,12 @@ begin
     -- Design-under-test instantiation
     DUT: entity work.divider
         port map(
-            i_Clock => s_Clock,
-            i_Reset => s_Reset,
-            i_Dividend => s_iDividend,
-            i_Divisor => s_iDivisor,
-            o_Done => s_oDone,
-            o_Quotient => s_oQuotient,
+            i_Clock     => s_Clock,
+            i_Reset     => s_Reset,
+            i_Dividend  => s_iDividend,
+            i_Divisor   => s_iDivisor,
+            o_Done      => s_oDone,
+            o_Quotient  => s_oQuotient,
             o_Remainder => s_oRemainder
         );
 
@@ -110,7 +110,7 @@ begin
             wait for CLOCK_PERIOD;
             v_Cycles := v_Cycles + 1;
         end loop;
-         assert s_oQuotient = (s_oQuotient'range => '1') and 
+        assert s_oQuotient = (s_oQuotient'range => '1') and 
                s_oRemainder = std_logic_vector(to_unsigned(10, DATA_WIDTH)) and 
                v_Cycles = 1
         report "tb_divider: testcase 3 failed(10 / 0 = all 1s, remainder 10)" severity error;

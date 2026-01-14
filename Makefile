@@ -82,12 +82,12 @@ SOURCE := \
 	./source/register_file.vhd \
 	./source/memory.vhd \
 	./source/extender_NtoM.vhd \
+	./source/multiplier.vhd \
+	./source/divider.vhd \
 	./source/arithmetic_logic_unit.vhd \
 	./source/pipeline_register.vhd ./source/register_IF.vhd ./source/register_ID.vhd ./source/register_EX.vhd ./source/register_MEM.vhd ./source/register_WB.vhd \
 	./source/control_unit.vhd \
 	./source/branch_unit.vhd \
-	./source/multiplier.vhd \
-	./source/divider.vhd \
 	./source/forwarding_unit.vhd \
 	./source/hazard_unit.vhd \
 	./source/processor.vhd

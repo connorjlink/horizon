@@ -12,11 +12,14 @@ entity arithmetic_logic_unit is
         constant N : natural := 32
     );
     port(
+        i_Clock    : in  std_logic;
+        i_Reset    : in  std_logic;
         i_A        : in  std_logic_vector(31 downto 0);
         i_B        : in  std_logic_vector(31 downto 0);
         i_Operator : in  alu_operator_t;
         o_F        : out std_logic_vector(31 downto 0);
-        o_Carry    : out std_logic
+        o_Carry    : out std_logic;
+        o_Done     : out std_logic
     );
 end arithmetic_logic_unit;
 
@@ -38,41 +41,50 @@ signal s_AdderSubtractorOut : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_IsSubtraction      : std_logic := '0';
 signal s_CarryOut           : std_logic := '0';
 
+signal s_AIsSigned : std_logic := '0';
+signal s_BIsSigned : std_logic := '0';
+
+signal s_ProductOut   : std_logic_vector(2*N-1 downto 0) := (others => '0');
+signal s_QuotientOut  : std_logic_vector(N-1 downto 0) := (others => '0');
+signal s_RemainderOut : std_logic_vector(N-1 downto 0) := (others => '0');
+signal s_DividerDone  : std_logic := '0';
+
+
 begin
 
     ------------------------------------------------------
     -- Logical XOR, OR, AND
     ------------------------------------------------------
 
-    g_NBit_XOR: for i in 0 to N-1
+    g_XOR : for i in 0 to N-1
     generate
-        XORI: entity work.xor_2
+        e_XOR: entity work.xor_2
             port map(
                 i_A => i_A(i),
                 i_B => i_B(i),
                 o_F => s_XOROut(i)
             );
-    end generate g_NBit_XOR;
+    end generate g_XOR;
 
-    g_NBit_OR: for i in 0 to N-1
+    g_OR: for i in 0 to N-1
     generate
-        ORI: entity work.or_2
+        e_OR: entity work.or_2
             port map(
                 i_A => i_A(i),
                 i_B => i_B(i),
                 o_F => s_OROut(i)
             );
-    end generate g_NBit_OR;
+    end generate g_OR;
 
-    g_NBit_AND: for i in 0 to N-1
+    g_AND: for i in 0 to N-1
     generate
-        ANDI: entity work.and_2
+        e_AND: entity work.and_2
             port map(
                 i_A => i_A(i),
                 i_B => i_B(i),
                 o_F => s_ANDOut(i)
             );
-    end generate g_NBit_AND;
+    end generate g_AND;
 
 
     ------------------------------------------------------
@@ -83,7 +95,7 @@ begin
                        '1' when i_Operator = SUB_OPERATOR else
                        '0';
 
-    g_NBit_ALUAdder: entity work.addersubtractor_N
+    e_AdderSubtractor: entity work.addersubtractor_N
         port map(
             i_A             => i_A,
             i_B             => i_B,
@@ -103,7 +115,7 @@ begin
     s_IsRight <= '1' when i_Operator = SRL_OPERATOR or i_Operator = SRA_OPERATOR else
                 '0';
 
-    g_BarrelShifter: entity work.barrel_shifter
+    e_BarrelShifter: entity work.barrel_shifter
         port map(
             i_A            => i_A,
             i_B            => i_B(4 downto 0), -- log2(32) = 5
@@ -123,24 +135,82 @@ begin
     s_IsLessSigned <= 32x"1" when (signed(i_A) < signed(i_B)) else
                       32x"0";
 
+
+
+    ------------------------------------------------------
+    -- M Extension Instruction Set
+    ------------------------------------------------------
+
+    with i_Operator select
+        s_AIsSigned <=
+            '1' when MUL_OPERATOR,
+            '1' when MULH_OPERATOR,
+            '1' when MULHSU_OPERATOR,
+            '0' when others;
+
+    with i_Operator select
+        s_BIsSigned <=
+            '1' when MUL_OPERATOR,
+            '1' when MULH_OPERATOR,
+            '0' when others;
+
+    e_Multiplier: entity work.multiplier
+        generic map(
+            N => DATA_WIDTH
+        )
+        port map(
+            i_A         => i_A,
+            i_B         => i_B,
+            i_AIsSigned => s_AIsSigned,
+            i_BIsSigned => s_BIsSigned,
+            o_P         => s_ProductOut
+        );
+
+    e_Divider: entity work.divider
+        generic map(
+            N => DATA_WIDTH
+        )
+        port map(
+            i_Clock     => i_Clock,
+            i_Reset     => i_Reset,
+            i_Dividend  => i_A,
+            i_Divisor   => i_B,
+            o_Done      => s_DividerDone,
+            o_Quotient  => s_QuotientOut,
+            o_Remainder => s_RemainderOut
+        );
+
     
     ------------------------------------------------------
     -- Output Multiplexing
     ------------------------------------------------------
         
     with i_Operator select 
+        o_Done <=
+            s_DividerDone when DIV_OPERATOR,
+            '1'           when others;
+
+    with i_Operator select 
         o_F <= 
-            s_AdderSubtractorOut when ADD_OPERATOR,
-            s_AdderSubtractorOut when SUB_OPERATOR,
-            s_ANDOut             when AND_OPERATOR,
-            s_OROut              when OR_OPERATOR,
-            s_XOROut             when XOR_OPERATOR,
-            s_BarrelShifterOut   when SLL_OPERATOR,
-            s_BarrelShifterOut   when SRL_OPERATOR,
-            s_BarrelShifterOut   when SRA_OPERATOR,
-            s_IsLessSigned       when SLT_OPERATOR,
-            s_IsLessUnsigned     when SLTU_OPERATOR,
-            (others => '0')      when others;
+            s_AdderSubtractorOut       when ADD_OPERATOR,
+            s_AdderSubtractorOut       when SUB_OPERATOR,
+            s_ANDOut                   when AND_OPERATOR,
+            s_OROut                    when OR_OPERATOR,
+            s_XOROut                   when XOR_OPERATOR,
+            s_BarrelShifterOut         when SLL_OPERATOR,
+            s_BarrelShifterOut         when SRL_OPERATOR,
+            s_BarrelShifterOut         when SRA_OPERATOR,
+            s_IsLessSigned             when SLT_OPERATOR,
+            s_IsLessUnsigned           when SLTU_OPERATOR,
+            s_ProductOut(31 downto 0)  when MUL_OPERATOR,
+            s_ProductOut(63 downto 32) when MULH_OPERATOR,
+            s_ProductOut(63 downto 32) when MULHSU_OPERATOR,
+            s_ProductOut(63 downto 32) when MULHU_OPERATOR,
+            s_QuotientOut              when DIV_OPERATOR,
+            s_QuotientOut              when DIVU_OPERATOR,
+            s_RemainderOut             when REM_OPERATOR,
+            s_RemainderOut             when REMU_OPERATOR,
+            (others => '0')            when others;
 
     with i_Operator select 
         o_Carry <=

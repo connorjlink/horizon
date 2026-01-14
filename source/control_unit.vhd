@@ -9,12 +9,13 @@ use work.types.all;
 
 entity control_unit is
     generic(
-        constant ENABLE_DEBUG : boolean := false
+        constant ENABLE_DEBUG : boolean := true
     );
     port(
         i_Clock                   : in  std_logic;
         i_Reset                   : in  std_logic;
         i_Instruction             : in  std_logic_vector(31 downto 0);
+        i_ThreadId                : in  std_logic;
         o_MemoryWriteEnable       : out std_logic;
         o_RegisterFileWriteEnable : out std_logic;
         o_RegisterSource          : out rf_source_t;
@@ -31,7 +32,8 @@ entity control_unit is
         o_IsBranch                : out std_logic;
         o_IPToALU                 : out std_logic;
         o_IsStride4               : out std_logic;
-        o_IsSignExtend            : out std_logic
+        o_IsSignExtend            : out std_logic;
+        o_StallThread             : out std_logic_vector(THREAD_COUNT-1 downto 0)
     );
 end control_unit;
 
@@ -57,8 +59,14 @@ signal s_extjImmediate : std_logic_vector(31 downto 0);
 signal s_exthImmediate : std_logic_vector(31 downto 0);
 
 signal s_SignExtend : std_logic := '0';
+signal s_ThreadId   : integer   := 0;
 
 begin
+
+    with i_ThreadId select
+        s_ThreadId <=
+            1 when '1',
+            0 when others;
 
     -- 4-byte instructions are indicated by a 11 in the two least-significant bits of the opcode
     o_IsStride4 <= '1' when s_decOpcode(1 downto 0) = 2b"11" else
@@ -154,6 +162,7 @@ begin
         variable v_BranchMode              : branch_mode_t;
         variable v_Immediate               : std_logic_vector(31 downto 0);
         variable v_IPToALU                 : std_logic;
+        variable v_StallThread             : std_logic_vector(THREAD_COUNT-1 downto 0);
 
     begin 
         if i_Reset = '0' then
@@ -411,91 +420,163 @@ begin
                     v_RegisterSource := RFSOURCE_FROMALU;
                     v_ALUSource := ALUSOURCE_REGISTER;
 
-                    case s_decFunc3 is
-                        when 3b"000" =>
-                            if s_decFunc7 = 7b"0100000" then
-                                -- sub  - 000 + 0100000
-                                v_ALUOperator := SUB_OPERATOR;
+                    if s_decFunc7 = 7b"0000001" then
+                        -- M-Extension
+                        case s_decFunc3 is
+                            when 3b"000" =>
+                                -- mul  - 000
+                                v_ALUOperator := MUL_OPERATOR;
                                 if ENABLE_DEBUG then
-                                    report "sub" severity note;
+                                    report "mul" severity note;
                                 end if;
 
-                            else
-                                -- add  - 000 + 0000000
-                                v_ALUOperator := ADD_OPERATOR;
+                            when 3b"001" =>
+                                -- mulh - 001
+                                v_ALUOperator := MULH_OPERATOR;
                                 if ENABLE_DEBUG then
-                                    report "add" severity note;
+                                    report "mulh" severity note;
                                 end if;
 
-                            end if;
-
-                        when 3b"001" =>
-                            -- sll  - 001 + 0000000
-                            v_ALUOperator := SLL_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "sll" severity note;
-                            end if;
-
-                        when 3b"010" =>
-                            -- slt  - 010 + 0000000
-                            v_ALUOperator := SLT_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "slt" severity note;
-                            end if;
-
-                        when 3b"011" =>
-                            -- sltu - 011 + 0000000
-                            v_ALUOperator := SLTU_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "sltu" severity note;
-                            end if;
-
-                        when 3b"100" =>
-                            -- xor  - 100 + 0000000
-                            v_ALUOperator := XOR_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "xor" severity note;
-                            end if;
-
-                        when 3b"101" =>
-                            -- shtype field is equivalent to func7
-                            if s_decFunc7 = 7b"0100000" then
-                                -- sra - 101 + 0100000
-                                v_ALUOperator := SRA_OPERATOR;
+                            when 3b"010" =>
+                                -- mulhsu - 010
+                                v_ALUOperator := MULHSU_OPERATOR;
                                 if ENABLE_DEBUG then
-                                    report "sra" severity note;
+                                    report "mulhu" severity note;
                                 end if;
 
-                            else
-                                -- srl - 101 + 0000000
-                                v_ALUOperator := SRL_OPERATOR;
+                            when 3b"011" =>
+                                -- mulhu - 011
+                                v_ALUOperator := MULHU_OPERATOR;
                                 if ENABLE_DEBUG then
-                                    report "srl" severity note;
+                                    report "mulhsu" severity note;
                                 end if;
 
-                            end if;
+                            when 3b"100" =>
+                                -- div  - 100
+                                v_ALUOperator := DIV_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "div" severity note;
+                                end if;
 
-                        when 3b"110" =>
-                            -- or   - 110 + 0000000
-                            v_ALUOperator := OR_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "or" severity note;
-                            end if;
+                            when 3b"101" =>
+                                -- divu - 101
+                                v_ALUOperator := DIVU_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "divu" severity note;
+                                end if;
 
-                        when 3b"111" =>
-                            -- and  - 111 + 0000000
-                            v_ALUOperator := AND_OPERATOR;
-                            if ENABLE_DEBUG then
-                                report "and" severity note;
-                            end if;
+                            when 3b"110" =>
+                                -- rem  - 110
+                                v_ALUOperator := REM_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "rem" severity note;
+                                end if;
 
-                        when others =>
-                            v_Break := '1';
-                            if ENABLE_DEBUG then
-                                report "Illegal R-Format Instruction" severity note;
-                            end if;
+                            when 3b"111" =>
+                                -- remu - 111
+                                v_ALUOperator := REMU_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "remu" severity note;
+                                end if;
+
+                            when others =>
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "Illegal M-Extension Instruction" severity note;
+                                end if;
+
+                        end case;
+
+                    else -- RV32I
+
+                        case s_decFunc3 is
+                            when 3b"000" =>
+                                if s_decFunc7 = 7b"0100000" then
+                                    -- sub  - 000 + 0100000
+                                    v_ALUOperator := SUB_OPERATOR;
+                                    if ENABLE_DEBUG then
+                                        report "sub" severity note;
+                                    end if;
+
+                                else
+                                    -- add  - 000 + 0000000
+                                    v_ALUOperator := ADD_OPERATOR;
+                                    if ENABLE_DEBUG then
+                                        report "add" severity note;
+                                    end if;
+
+                                end if;
+
+                            when 3b"001" =>
+                                -- sll  - 001 + 0000000
+                                v_ALUOperator := SLL_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "sll" severity note;
+                                end if;
+
+                            when 3b"010" =>
+                                -- slt  - 010 + 0000000
+                                v_ALUOperator := SLT_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "slt" severity note;
+                                end if;
+
+                            when 3b"011" =>
+                                -- sltu - 011 + 0000000
+                                v_ALUOperator := SLTU_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "sltu" severity note;
+                                end if;
+
+                            when 3b"100" =>
+                                -- xor  - 100 + 0000000
+                                v_ALUOperator := XOR_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "xor" severity note;
+                                end if;
+
+                            when 3b"101" =>
+                                -- shtype field is equivalent to func7
+                                if s_decFunc7 = 7b"0100000" then
+                                    -- sra - 101 + 0100000
+                                    v_ALUOperator := SRA_OPERATOR;
+                                    if ENABLE_DEBUG then
+                                        report "sra" severity note;
+                                    end if;
+
+                                else
+                                    -- srl - 101 + 0000000
+                                    v_ALUOperator := SRL_OPERATOR;
+                                    if ENABLE_DEBUG then
+                                        report "srl" severity note;
+                                    end if;
+
+                                end if;
+
+                            when 3b"110" =>
+                                -- or   - 110 + 0000000
+                                v_ALUOperator := OR_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "or" severity note;
+                                end if;
+
+                            when 3b"111" =>
+                                -- and  - 111 + 0000000
+                                v_ALUOperator := AND_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "and" severity note;
+                                end if;
+
+                            when others =>
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "Illegal R-Format Instruction" severity note;
+                                end if;
                             
-                    end case;
+                        end case;
+
+                    end if;
+
 
                 when 7b"1100011" => -- B-Format
                     v_Immediate := s_extbImmediate;
@@ -578,10 +659,28 @@ begin
                     end if;
 
                 when 7b"0001111" => -- fence
-                    -- TODO: since this core is running scalar, in-order, and single-tasking, this can safely be left as a NOP
-                    if ENABLE_DEBUG then
-                        report "fence" severity note;
-                    end if;
+                    case s_decFunc3 is
+                        when 3b"000" =>
+                            -- fence   - 000
+                            -- TODO: implement properly once multithreading
+                            if ENABLE_DEBUG then
+                                report "fence" severity note;
+                            end if;
+                        
+                        when 3b"001" =>
+                            -- fence.i - 001
+                            v_StallThread(s_ThreadId) := '1';
+                            if ENABLE_DEBUG then
+                                report "fence.i" severity note;
+                            end if;
+
+                        when others =>
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "Illegal fence Instruction" severity note;
+                            end if;
+
+                    end case;
 
                 when 7b"1110011" => -- ecall/ebreak
                     if i_Instruction = 32b"00000000000100000000000001110011" then
@@ -618,6 +717,8 @@ begin
             v_Immediate           := 32x"0";
             v_BranchMode          := BRANCHMODE_JAL_OR_BCC;
             v_IPToALU             := '0';
+            v_StallThread         := (others => '0');
+
         end if;
 
         o_IsBranch            <= v_IsBranch;

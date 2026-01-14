@@ -1,6 +1,5 @@
 ###############################
 ## (c) 2025 Connor J. Link. All Rights Reserved.
-## Iowa State University - CPRE 3810
 ## base.s
 ###############################
 
