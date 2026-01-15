@@ -198,13 +198,6 @@ begin
                         v_Remainder := resize(unsigned(s_AbsoluteValueDividend), N+1);
                         s_State     <= STATE_DONE;
 
-                    elsif (i_DividendIsSigned = '1' and i_DivisorIsSigned = '1') and
-                          (i_Dividend(N-1) = '1' and i_Dividend(N-2 downto 0) = (i_Dividend(N-2 downto 0)'range => '0')) and
-                          (i_Divisor = (i_Divisor'range => '1')) then
-                        v_Quotient  := unsigned(i_Dividend);
-                        v_Remainder := (others => '0');
-                        s_State     <= STATE_DONE;
-
                     else
                         s_State <= STATE_RUN;
                     end if;

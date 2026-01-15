@@ -52,6 +52,9 @@ signal s_DividerDone  : std_logic := '0';
 signal s_DividendIsSigned : std_logic := '0';
 signal s_DivisorIsSigned  : std_logic := '0';
 
+signal s_IsDividerActive : std_logic := '0';
+signal s_DividerReset    : std_logic := '0';
+
 begin
 
     ------------------------------------------------------
@@ -174,7 +177,7 @@ begin
         )
         port map(
             i_Clock            => i_Clock,
-            i_Reset            => i_Reset,
+            i_Reset            => s_DividerReset,
             i_Dividend         => i_A,
             i_Divisor          => i_B,
             i_DividendIsSigned => s_DividendIsSigned,
@@ -227,5 +230,11 @@ begin
 
     s_DividendIsSigned <= '1' when (i_Operator = DIV_OPERATOR or i_Operator = REM_OPERATOR) else '0';
     s_DivisorIsSigned  <= '1' when (i_Operator = DIV_OPERATOR or i_Operator = REM_OPERATOR) else '0';
+
+    -- The divider is iterative and stateful; keep it in reset unless a DIV/REM op is
+    -- actually being executed. This prevents the divider from running continuously
+    -- on unrelated ALU inputs and then "finishing" part-way through a real div/rem.
+    s_IsDividerActive <= '1' when (i_Operator = DIV_OPERATOR or i_Operator = DIVU_OPERATOR or i_Operator = REM_OPERATOR or i_Operator = REMU_OPERATOR) else '0';
+    s_DividerReset <= i_Reset or (not s_IsDividerActive);
 
 end implementation;

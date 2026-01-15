@@ -232,7 +232,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IFID_Stall or s_ALUBusy,
-            i_Flush   => s_IFID_Flush,
+            i_Flush   => s_IFID_Flush and (not s_ALUBusy),
             i_Signals => IFID_IF_raw,
             o_Signals => IFID_IF_buf
         );
@@ -251,7 +251,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IDEX_Stall or s_ALUBusy,
-            i_Flush   => s_IDEX_Flush,
+            i_Flush   => s_IDEX_Flush and (not s_ALUBusy),
             i_Signals => IDEX_IF_raw,
             o_Signals => IDEX_IF_buf
         );
@@ -261,7 +261,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IDEX_Stall or s_ALUBusy,
-            i_Flush   => s_IDEX_Flush,
+            i_Flush   => s_IDEX_Flush and (not s_ALUBusy),
             i_Signals => IDEX_ID_raw,
             o_Signals => IDEX_ID_buf
         );
@@ -281,7 +281,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_EXMEM_Stall or s_ALUBusy,
-            i_Flush   => s_EXMEM_Flush,
+            i_Flush   => s_EXMEM_Flush and (not s_ALUBusy),
             i_Signals => EXMEM_IF_raw,
             o_Signals => EXMEM_IF_buf
         );
@@ -291,7 +291,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_EXMEM_Stall or s_ALUBusy,
-            i_Flush   => s_EXMEM_Flush,
+            i_Flush   => s_EXMEM_Flush and (not s_ALUBusy),
             i_Signals => EXMEM_ID_raw,
             o_Signals => EXMEM_ID_buf
         );
@@ -301,7 +301,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_EXMEM_Stall or s_ALUBusy,
-            i_Flush   => s_EXMEM_Flush,
+            i_Flush   => s_EXMEM_Flush and (not s_ALUBusy),
             i_Signals => EXMEM_EX_raw,
             o_Signals => EXMEM_EX_buf
         );
@@ -559,13 +559,15 @@ begin
             i_Reset    => i_Reset,
             i_A        => s_RealALUOperand1,
             i_B        => s_RealALUOperand2,
-            i_Operator => EXMEM_ID_raw.ALUOperator,
+            -- Use the EX-stage latched operator directly to avoid delta-cycle races
+            -- where o_Done still reflects a previous (non-divider) op.
+            i_Operator => IDEX_ID_buf.ALUOperator,
             o_F        => EXMEM_EX_raw.Result,
             o_Carry    => EXMEM_EX_raw.CarryOut,
             o_Done     => s_ALUDone
         );
 
-    s_ALUBusy <= '1' when IsMulticycleALUOperator(IDEX_ID_buf.ALUOperator) and (s_ALUDone = '0') else 
+    s_ALUBusy <= '1' when IsMulticycleALUOperator(IDEX_ID_buf.ALUOperator) and (s_ALUDone = '0') else
                  '0';
 
     o_ALUOutput <= EXMEM_EX_raw.Result;
