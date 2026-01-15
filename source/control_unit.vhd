@@ -34,7 +34,7 @@ entity control_unit is
         o_IsStride4               : out std_logic;
         o_IsSignExtend            : out std_logic;
         o_StallThread             : out std_logic_vector(THREAD_COUNT-1 downto 0);
-        o_AtomicAcquireThread     : out std_logic_vector(THREAD_COUNT-1 downto 0);
+        o_AtomicAcquireThread     : out std_logic_vector(THREAD_COUNT-1 downto 0)
     );
 end control_unit;
 
@@ -64,6 +64,32 @@ signal s_exthImmediate : std_logic_vector(31 downto 0);
 
 signal s_SignExtend : std_logic := '0';
 signal s_ThreadId   : integer   := 0;
+
+-----------------------------------------------------
+-- Helper Functions
+-----------------------------------------------------
+
+procedure SequesterOrAwait(
+
+    constant m_ThreadId              : in    integer;
+    variable m_AtomicSequesterThread : inout std_logic_vector(THREAD_COUNT-1 downto 0);
+    variable m_StallThread           : inout std_logic_vector(THREAD_COUNT-1 downto 0)
+
+) is begin
+
+    -- check if there are any outstanding sequestrations from another thread
+    if or (m_AtomicSequesterThread) = '1' then
+        -- cannot proceed, yield to the pending thread
+        m_StallThread(m_ThreadId) := '1';
+
+    else
+        -- no outstanding sequestrations, proceed and acquire the atomic lock
+        m_AtomicSequesterThread(m_ThreadId) := '1';
+    end if;
+
+end procedure;
+
+-----------------------------------------------------
 
 begin
 
@@ -645,7 +671,7 @@ begin
 
                 when 7b"0101111" => -- A-Extension
 
-                    if s_decFun3 = 3"010" then
+                    if s_decFunc3 = 3b"010" then
 
                         case s_decFunc5 is
 
@@ -670,16 +696,13 @@ begin
                                 -- amoswap.w - 00001
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
-                                -- check if there are any outstanding sequestrations from another thread
-                                if or (v_AtomicSequesterThread) = '1' then
-                                    -- cannot proceed, yield to the pending thread
-                                    v_StallThread(s_ThreadId) := '1';
+                                
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
 
-                                else
-                                    -- no outstanding sequestrations, proceed and acquire the atomic lock
-                                    v_AtomicSequesterThread(s_ThreadId) := '1';
-
-                                end if;
 
                                 if ENABLE_DEBUG then
                                     report "amoswap.w" severity note;
