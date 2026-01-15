@@ -33,7 +33,8 @@ entity control_unit is
         o_IPToALU                 : out std_logic;
         o_IsStride4               : out std_logic;
         o_IsSignExtend            : out std_logic;
-        o_StallThread             : out std_logic_vector(THREAD_COUNT-1 downto 0)
+        o_StallThread             : out std_logic_vector(THREAD_COUNT-1 downto 0);
+        o_AtomicAcquireThread     : out std_logic_vector(THREAD_COUNT-1 downto 0);
     );
 end control_unit;
 
@@ -43,6 +44,9 @@ architecture implementation of control_unit is
 signal s_decOpcode     : std_logic_vector(6 downto 0);
 signal s_decFunc3      : std_logic_vector(2 downto 0);
 signal s_decFunc7      : std_logic_vector(6 downto 0);
+signal s_decFunc5      : std_logic_vector(4 downto 0);
+signal s_decAq         : std_logic;
+signal s_decRl         : std_logic;
 signal s_deciImmediate : std_logic_vector(11 downto 0);
 signal s_decsImmediate : std_logic_vector(11 downto 0);
 signal s_decbImmediate : std_logic_vector(12 downto 0);
@@ -73,7 +77,7 @@ begin
                   '0';
 
     -- I-format
-    g_ControlUnitExtenderI: entity work.extender_NtoM
+    e_ControlUnitExtenderI: entity work.extender_NtoM
         generic map(
             N => 12,
             M => DATA_WIDTH
@@ -85,7 +89,7 @@ begin
         );
 
     -- S-format
-    g_ControlUnitExtenderS: entity work.extender_NtoM
+    e_ControlUnitExtenderS: entity work.extender_NtoM
         generic map(
             N => 12,
             M => DATA_WIDTH
@@ -97,7 +101,7 @@ begin
         );
 
     -- B-format
-    g_ControlUnitExtenderB: entity work.extender_NtoM
+    e_ControlUnitExtenderB: entity work.extender_NtoM
         generic map(
             N => 13,
             M => DATA_WIDTH
@@ -113,7 +117,7 @@ begin
     s_extuImmediate(11 downto 0)  <= 12x"0";
 
     -- J-Format
-    g_ControlUnitExtenderJ: entity work.extender_NtoM
+    e_ControlUnitExtenderJ: entity work.extender_NtoM
         generic map(
             N => 21,
             M => DATA_WIDTH
@@ -129,7 +133,7 @@ begin
     s_exthImmediate(4 downto 0)  <= s_dechImmediate;
 
 
-    g_InstructionDecoder: entity work.instruction_decoder
+    e_InstructionDecoder: entity work.instruction_decoder
         port map(
             i_Instruction => i_Instruction,
             o_Opcode      => s_decOpcode,
@@ -138,6 +142,9 @@ begin
             o_RS2         => o_RS2,
             o_Func3       => s_decFunc3,
             o_Func7       => s_decFunc7,
+            o_Func5       => s_decFunc5,
+            o_Aq          => s_decAq,
+            o_Rl          => s_decRl,
             o_iImmediate  => s_deciImmediate,
             o_sImmediate  => s_decsImmediate,
             o_bImmediate  => s_decbImmediate,
@@ -163,6 +170,7 @@ begin
         variable v_Immediate               : std_logic_vector(31 downto 0);
         variable v_IPToALU                 : std_logic;
         variable v_StallThread             : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_AtomicSequesterThread   : std_logic_vector(THREAD_COUNT-1 downto 0);
 
     begin 
         if i_Reset = '0' then
@@ -325,9 +333,9 @@ begin
                         -- NOTE: RV64I only
                         when 3b"011" =>
                            -- ld   - 011
-                           v_MemoryWidth := DOUBLE_TYPE;
+                           v_Break := '1';
                            if ENABLE_DEBUG then
-                               report "ld" severity note;
+                               report "ld (Illegal I-Format (Alternate) Instruction)" severity note;
                            end if;
 
                         when 3b"100" =>
@@ -346,22 +354,20 @@ begin
                                 report "lhu" severity note;
                             end if;
 
-                        -- NOTE: unoffical instruction for RV32I
+                        -- NOTE: RV64I only
                         when 3b"110" =>
                             -- lwu  - 110
-                            v_IsSignExtend := '0';
-                            v_MemoryWidth := WORD_TYPE;
+                            v_Break := '1';
                             if ENABLE_DEBUG then
-                                report "lwu" severity note;
+                                report "lwu (Illegal I-Format (Alternate) Instruction)" severity note;
                             end if;
 
-                        -- NOTE: unoffical instruction for RV64I
+                        -- NOTE: RV64I only
                         when 3b"111" =>
                            -- ldu  - 111
-                           v_IsSignExtend := '0';
-                           v_MemoryWidth := DOUBLE_TYPE;
+                           v_Break := '1';
                            if ENABLE_DEBUG then
-                               report "ldu" severity note;
+                               report "ldu (Illegal I-Format (Alternate) Instruction)" severity note;
                            end if;
 
                         when others =>
@@ -402,9 +408,9 @@ begin
                         -- NOTE: RV64I only
                         when 3b"011" =>
                            -- sd   - 011
-                           v_MemoryWidth := DOUBLE_TYPE;
+                           v_Break := '1';
                            if ENABLE_DEBUG then
-                               report "sd" severity note;
+                               report "sd (Illegal S-Format Instruction)" severity note;
                            end if;
 
                         when others =>
@@ -636,6 +642,137 @@ begin
                             end if;
 
                     end case;
+
+                when 7b"0101111" => -- A-Extension
+
+                    if s_decFun3 = 3"010" then
+
+                        case s_decFunc5 is
+
+                            when 5b"00010" =>
+                                -- lr.w  - 00010
+                                v_MemoryWidth := WORD_TYPE;
+                                -- TODO: Aq and Rl
+                                if ENABLE_DEBUG then
+                                    report "lr.w" severity note;
+                                end if;
+
+                            when 5b"00011" =>
+                                -- sc.w  - 00011
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                
+                                if ENABLE_DEBUG then
+                                    report "sc.w" severity note;
+                                end if;
+
+                            when 5b"00001" =>
+                                -- amoswap.w - 00001
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                -- check if there are any outstanding sequestrations from another thread
+                                if or (v_AtomicSequesterThread) = '1' then
+                                    -- cannot proceed, yield to the pending thread
+                                    v_StallThread(s_ThreadId) := '1';
+
+                                else
+                                    -- no outstanding sequestrations, proceed and acquire the atomic lock
+                                    v_AtomicSequesterThread(s_ThreadId) := '1';
+
+                                end if;
+
+                                if ENABLE_DEBUG then
+                                    report "amoswap.w" severity note;
+                                end if;
+
+                            when 5b"00000" =>
+                                -- amoadd.w  - 00000
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := ADD_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amoadd.w" severity note;
+                                end if;
+
+                            when 5b"00100" =>
+                                -- amoxor.w  - 00100
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := XOR_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amoxor.w" severity note;
+                                end if;
+
+                            when 5b"01100" =>
+                                -- amoand.w  - 01100
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := AND_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amoand.w" severity note;
+                                end if;
+
+                            when 5b"01000" =>
+                                -- amoor.w  - 01000
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := OR_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amoor.w" severity note;
+                                end if;
+
+                            when 5b"10000" =>
+                                -- amomin.w  - 10000
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := MIN_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amomin.w" severity note;
+                                end if;
+
+                            when 5b"10100" =>
+                                -- amomax.w  - 10100
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := MAX_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amomax.w" severity note;
+                                end if;
+
+                            when 5b"11000" =>
+                                -- amominu.w  - 11000
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := MINU_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amominu.w" severity note;
+                                end if;
+
+                            when 5b"11100" =>
+                                -- amomaxu.w  - 11100
+                                v_MemoryWidth := WORD_TYPE;
+                                v_MemoryWriteEnable := '1';
+                                v_ALUOperator := MAXU_OPERATOR;
+                                if ENABLE_DEBUG then
+                                    report "amomaxu.w" severity note;
+                                end if;
+
+                            when others =>
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "Illegal A-Extension Instruction" severity note;
+                                end if;
+
+                        end case;
+
+                    else 
+
+                        v_Break := '1';
+                        if ENABLE_DEBUG then
+                            report "Illegal A-Extension Instruction" severity note;
+                        end if;
+
+                    end if;
 
                 when 7b"0110111" => -- U-Format
                     -- lui   - rd = imm << 12

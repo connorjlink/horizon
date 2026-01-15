@@ -16,6 +16,9 @@ entity instruction_decoder is
         o_RS2         : out std_logic_vector(4 downto 0);
         o_Func3       : out std_logic_vector(2 downto 0);
         o_Func7       : out std_logic_vector(6 downto 0);
+        o_Func5       : out std_logic_vector(4 downto 0);
+        o_Aq          : out std_logic;
+        o_Rl          : out std_logic;
         o_iImmediate  : out std_logic_vector(11 downto 0);
         o_sImmediate  : out std_logic_vector(11 downto 0);
         o_bImmediate  : out std_logic_vector(12 downto 0);
@@ -40,6 +43,11 @@ begin
     o_Func3 <= i_Instruction(14 downto 12);
 
     o_Func7 <= i_Instruction(31 downto 25);
+
+    o_Func5 <= i_Instruction(31 downto 27);
+
+    o_Aq <= i_Instruction(26);
+    o_Rl <= i_Instruction(25);
 
     o_iImmediate <= i_Instruction(31 downto 20);
 

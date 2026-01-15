@@ -165,6 +165,22 @@ _start:
     remu x7, x5, x6
     bne x7, x8, fail
 
+    # Test 20.) rem: -20 % 5 = 0
+    li x2, 20
+    li x5, -20
+    li x6, 5
+    li x8, 0
+    rem x7, x5, x6
+    bne x7, x8, fail
+
+    # Test 21.) remu: 20 % -5 = 0
+    li x2, 21
+    li x5, 20
+    li x6, -5
+    li x8, 0
+    remu x7, x5, x6
+    bne x7, x8, fail
+
     # Success if execution reaches here
     j pass
 
