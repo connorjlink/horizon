@@ -49,6 +49,9 @@ signal s_QuotientOut  : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_RemainderOut : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_DividerDone  : std_logic := '0';
 
+signal s_DividendIsSigned : std_logic := '0';
+signal s_DivisorIsSigned  : std_logic := '0';
+
 begin
 
     ------------------------------------------------------
@@ -170,13 +173,15 @@ begin
             N => DATA_WIDTH
         )
         port map(
-            i_Clock     => i_Clock,
-            i_Reset     => i_Reset,
-            i_Dividend  => i_A,
-            i_Divisor   => i_B,
-            o_Done      => s_DividerDone,
-            o_Quotient  => s_QuotientOut,
-            o_Remainder => s_RemainderOut
+            i_Clock            => i_Clock,
+            i_Reset            => i_Reset,
+            i_Dividend         => i_A,
+            i_Divisor          => i_B,
+            i_DividendIsSigned => s_DividendIsSigned,
+            i_DivisorIsSigned  => s_DivisorIsSigned,
+            o_Done             => s_DividerDone,
+            o_Quotient         => s_QuotientOut,
+            o_Remainder        => s_RemainderOut
         );
 
     
@@ -219,5 +224,8 @@ begin
             s_CarryOut when ADD_OPERATOR,
             s_CarryOut when SUB_OPERATOR,
             '0'        when others;
+
+    s_DividendIsSigned <= '1' when (i_Operator = DIV_OPERATOR or i_Operator = REM_OPERATOR) else '0';
+    s_DivisorIsSigned  <= '1' when (i_Operator = DIV_OPERATOR or i_Operator = REM_OPERATOR) else '0';
 
 end implementation;

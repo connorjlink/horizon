@@ -48,7 +48,7 @@ begin
     s_BIsNegative <= i_BIsSigned and i_B(N-1);
     s_PIsNegative <= s_AIsNegative xor s_BIsNegative;
 
-    -- Compute magnitudes for unsigned multiplication
+    -- compute magnitudes for unsigned multiplication
     e_NegativeA : entity work.addersubtractor_N
         generic map(
             N => N
@@ -99,7 +99,7 @@ begin
     s_Carry(0) <= '0';
     s_AbsoluteValueP <= s_Accumulators(N);
 
-    -- Conditional negate to form signed product when needed
+    -- conditional negate to form signed product when needed
     e_NegativeP : entity work.addersubtractor_N
         generic map(
             N => M
@@ -127,7 +127,7 @@ begin
         g_PartialProductColumns : for w in 0 to M-1 generate
 
             g_IsInRange : if (w >= j) and (w < (j + N)) generate
-                ANDI : entity work.and_2
+                e_AND : entity work.and_2
                     port map(
                         i_A => s_AbsoluteValueA(w - j),
                         i_B => s_AbsoluteValueB(j),
@@ -140,11 +140,12 @@ begin
             end generate g_OUT_RANGE;
 
         end generate g_PartialProductColumns;
+
     end generate g_PartialProductRows;
 
 
     g_ACCUMULATOR : for j in 0 to N-1 generate
-        ADDN : entity work.adder_N
+        e_ADDER : entity work.adder_N
             generic map(
                 N => M
             )
