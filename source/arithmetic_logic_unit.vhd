@@ -33,6 +33,11 @@ signal s_ANDOut : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_IsLessSigned   : std_logic_vector(N-1 downto 0) := (others => '0');
 signal s_IsLessUnsigned : std_logic_vector(N-1 downto 0) := (others => '0');
 
+signal s_MinimumSigned   : std_logic_vector(N-1 downto 0) := (others => '0');
+signal s_MinimumUnsigned : std_logic_vector(N-1 downto 0) := (others => '0');
+signal s_MaximumSigned   : std_logic_vector(N-1 downto 0) := (others => '0');
+signal s_MaximumUnsigned : std_logic_vector(N-1 downto 0) := (others => '0');
+
 signal s_IsArithmetic     : std_logic := '0';
 signal s_IsRight          : std_logic := '0';
 signal s_BarrelShifterOut : std_logic_vector(N-1 downto 0) := (others => '0');
@@ -140,7 +145,17 @@ begin
     s_IsLessSigned <= 32x"1" when (signed(i_A) < signed(i_B)) else
                       32x"0";
 
+    s_MinimumSigned <= i_A when (signed(i_A) < signed(i_B)) else
+                       i_B;
 
+    s_MinimumUnsigned <= i_A when (unsigned(i_A) < unsigned(i_B)) else
+                         i_B;
+
+    s_MaximumSigned <= i_A when (signed(i_A) > signed(i_B)) else
+                       i_B;
+
+    s_MaximumUnsigned <= i_A when (unsigned(i_A) > unsigned(i_B)) else
+                         i_B;
 
     ------------------------------------------------------
     -- M Extension Instruction Set
@@ -220,6 +235,10 @@ begin
             s_QuotientOut              when DIVU_OPERATOR,
             s_RemainderOut             when REM_OPERATOR,
             s_RemainderOut             when REMU_OPERATOR,
+            s_MinimumSigned            when MIN_OPERATOR,
+            s_MinimumUnsigned          when MINU_OPERATOR,
+            s_MaximumSigned            when MAX_OPERATOR,
+            s_MaximumUnsigned          when MAXU_OPERATOR,
             (others => '0')            when others;
 
     with i_Operator select 

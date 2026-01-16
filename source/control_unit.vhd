@@ -12,29 +12,31 @@ entity control_unit is
         constant ENABLE_DEBUG : boolean := true
     );
     port(
-        i_Clock                   : in  std_logic;
-        i_Reset                   : in  std_logic;
-        i_Instruction             : in  std_logic_vector(31 downto 0);
-        i_ThreadId                : in  std_logic;
-        o_MemoryWriteEnable       : out std_logic;
-        o_RegisterFileWriteEnable : out std_logic;
-        o_RegisterSource          : out rf_source_t;
-        o_ALUSource               : out alu_source_t;
-        o_ALUOperator             : out alu_operator_t;
-        o_BranchOperator          : out branch_operator_t;
-        o_MemoryWidth             : out data_width_t;
-        o_BranchMode              : out branch_mode_t;
-        o_RD                      : out std_logic_vector(4 downto 0);
-        o_RS1                     : out std_logic_vector(4 downto 0);
-        o_RS2                     : out std_logic_vector(4 downto 0);
-        o_Immediate               : out std_logic_vector(31 downto 0);
-        o_Break                   : out std_logic;
-        o_IsBranch                : out std_logic;
-        o_IPToALU                 : out std_logic;
-        o_IsStride4               : out std_logic;
-        o_IsSignExtend            : out std_logic;
-        o_StallThread             : out std_logic_vector(THREAD_COUNT-1 downto 0);
-        o_AtomicAcquireThread     : out std_logic_vector(THREAD_COUNT-1 downto 0)
+        i_Clock                         : in  std_logic;
+        i_Reset                         : in  std_logic;
+        i_Instruction                   : in  std_logic_vector(31 downto 0);
+        i_ThreadId                      : in  std_logic;
+        o_MemoryWriteEnable             : out std_logic;
+        o_RegisterFileWriteEnable       : out std_logic;
+        o_RegisterSource                : out rf_source_t;
+        o_ALUSource                     : out alu_source_t;
+        o_ALUOperator                   : out alu_operator_t;
+        o_BranchOperator                : out branch_operator_t;
+        o_MemoryWidth                   : out data_width_t;
+        o_BranchMode                    : out branch_mode_t;
+        o_RD                            : out std_logic_vector(4 downto 0);
+        o_RS1                           : out std_logic_vector(4 downto 0);
+        o_RS2                           : out std_logic_vector(4 downto 0);
+        o_Immediate                     : out std_logic_vector(31 downto 0);
+        o_Break                         : out std_logic;
+        o_IsBranch                      : out std_logic;
+        o_IPToALU                       : out std_logic;
+        o_IsStride4                     : out std_logic;
+        o_IsSignExtend                  : out std_logic;
+        o_PendingMemoryOperationsThread : out std_logic_vector(THREAD_COUNT-1 downto 0);
+        o_StallThread                   : out std_logic_vector(THREAD_COUNT-1 downto 0);
+        o_AtomicSequesterThread         : out std_logic_vector(THREAD_COUNT-1 downto 0);
+        o_AqStallPendingThread          : out std_logic_vector(THREAD_COUNT-1 downto 0)
     );
 end control_unit;
 
@@ -69,22 +71,60 @@ signal s_ThreadId   : integer   := 0;
 -- Helper Functions
 -----------------------------------------------------
 
+function OneHot(
+    constant m_Index : in integer;
+    constant m_Size  : in integer
+) return std_logic_vector is
+    variable v_Result : std_logic_vector(m_Size-1 downto 0) := (others => '0');
+begin
+    
+    if m_Index >= 0 and m_Index < m_Size then
+        v_Result(m_Index) := '1';
+    
+    end if;
+    
+    return v_Result;
+
+end function;
+
 procedure SequesterOrAwait(
+    constant m_ThreadId                      : in    integer;
+    constant m_AqBit                         : in    std_logic;
+    constant m_RlBit                         : in    std_logic;
+    constant m_PendingMemoryOperationsThread : in    std_logic_vector(THREAD_COUNT-1 downto 0)
+    variable m_AtomicSequesterThread         : inout std_logic_vector(THREAD_COUNT-1 downto 0);
+    variable m_StallThread                   : inout std_logic_vector(THREAD_COUNT-1 downto 0);
+    variable m_AqStallPendingThread          : inout std_logic_vector(THREAD_COUNT-1 downto 0);
+) is
+    variable v_Mask : std_logic_vector(THREAD_COUNT-1 downto 0);
+begin
 
-    constant m_ThreadId              : in    integer;
-    variable m_AtomicSequesterThread : inout std_logic_vector(THREAD_COUNT-1 downto 0);
-    variable m_StallThread           : inout std_logic_vector(THREAD_COUNT-1 downto 0)
+    v_Mask := OneHot(m_ThreadId, THREAD_COUNT);
 
-) is begin
+    -----------------------------------------------------
+    -- RELEASE (rl): prior memory ops must complete before AMO
+    -----------------------------------------------------
+    if (m_RlBit = '1') and (m_PendingMemoryOperations(m_ThreadId) = '1') then
+        -- Cannot even attempt to take atomic ownership yet
+        m_StallThread(m_ThreadId) := '1';
+        return;
+    end if;
 
     -- check if there are any outstanding sequestrations from another thread
-    if or (m_AtomicSequesterThread) = '1' then
-        -- cannot proceed, yield to the pending thread
+    if (or (m_AtomicSequesterThread and not v_Mask) = '1') then
+        -- cannot proceed, yield to the other thread
         m_StallThread(m_ThreadId) := '1';
+        return;
+    end if;
 
-    else
-        -- no outstanding sequestrations, proceed and acquire the atomic lock
-        m_AtomicSequesterThread(m_ThreadId) := '1';
+    m_AtomicSequesterThread := v_Mask;
+
+    -----------------------------------------------------
+    -- ACQUIRE (aq): block later memory instructions after AMO completes
+    -----------------------------------------------------
+    if (m_AqBit = '1') then
+        -- schedule stall after retiring this instruction
+        m_AqStallPendingThread(m_ThreadId) := '1';
     end if;
 
 end procedure;
@@ -182,37 +222,43 @@ begin
     process(
         all
     )
-        variable v_IsBranch                : std_logic;
-        variable v_Break                   : std_logic;
-        variable v_IsSignExtend            : std_logic;
-        variable v_MemoryWriteEnable       : std_logic;
-        variable v_RegisterFileWriteEnable : std_logic;
-        variable v_ALUSource               : alu_source_t;
-        variable v_RegisterSource          : rf_source_t;
-        variable v_ALUOperator             : alu_operator_t;
-        variable v_BranchOperator          : branch_operator_t;
-        variable v_MemoryWidth             : data_width_t;
-        variable v_BranchMode              : branch_mode_t;
-        variable v_Immediate               : std_logic_vector(31 downto 0);
-        variable v_IPToALU                 : std_logic;
-        variable v_StallThread             : std_logic_vector(THREAD_COUNT-1 downto 0);
-        variable v_AtomicSequesterThread   : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_IsBranch                      : std_logic;
+        variable v_Break                         : std_logic;
+        variable v_IsSignExtend                  : std_logic;
+        variable v_MemoryWriteEnable             : std_logic;
+        variable v_RegisterFileWriteEnable       : std_logic;
+        variable v_ALUSource                     : alu_source_t;
+        variable v_RegisterSource                : rf_source_t;
+        variable v_ALUOperator                   : alu_operator_t;
+        variable v_BranchOperator                : branch_operator_t;
+        variable v_MemoryWidth                   : data_width_t;
+        variable v_BranchMode                    : branch_mode_t;
+        variable v_Immediate                     : std_logic_vector(31 downto 0);
+        variable v_IPToALU                       : std_logic;
+        variable v_PendingMemoryOperationsThread : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_StallThread                   : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_AtomicSequesterThread         : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_AqStallPending                : std_logic_vector(THREAD_COUNT-1 downto 0);
 
     begin 
         if i_Reset = '0' then
-            v_IsBranch                := '0';
-            v_Break                   := '0';
-            v_IsSignExtend            := '1'; -- 0: zero-extend, 1: sign-extend
-            v_MemoryWriteEnable       := '0';
-            v_RegisterFileWriteEnable := '0';
-            v_ALUSource               := ALUSOURCE_REGISTER; -- default is to put DS1 and DS2 into the ALU
-            v_RegisterSource          := RFSOURCE_FROMALU;
-            v_ALUOperator             := ADD_OPERATOR;
-            v_BranchOperator          := BRANCH_NONE;
-            v_MemoryWidth             := NONE_TYPE;
-            v_Immediate               := 32x"0";
-            v_BranchMode              := BRANCHMODE_NONE;
-            v_IPToALU                 := '0'; -- 0: no, 1: yes
+            v_IsBranch                      := '0';
+            v_Break                         := '0';
+            v_IsSignExtend                  := '1'; -- 0: zero-extend, 1: sign-extend
+            v_MemoryWriteEnable             := '0';
+            v_RegisterFileWriteEnable       := '0';
+            v_ALUSource                     := ALUSOURCE_REGISTER; -- default is to put DS1 and DS2 into the ALU
+            v_RegisterSource                := RFSOURCE_FROMALU;
+            v_ALUOperator                   := ADD_OPERATOR;
+            v_BranchOperator                := BRANCH_NONE;
+            v_MemoryWidth                   := NONE_TYPE;
+            v_Immediate                     := 32x"0";
+            v_BranchMode                    := BRANCHMODE_NONE;
+            v_IPToALU                       := '0'; -- 0: no, 1: yes
+            v_PendingMemoryOperationsThread := (others => '0');
+            v_StallThread                   := (others => '0');
+            v_AtomicSequesterThread         := (others => '0');
+            v_AqStallPending                := (others => '0');
 
             case s_decOpcode is 
                 when 7b"1101111" => -- J-Format
@@ -679,6 +725,13 @@ begin
                                 -- lr.w  - 00010
                                 v_MemoryWidth := WORD_TYPE;
                                 -- TODO: Aq and Rl
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "lr.w" severity note;
                                 end if;
@@ -687,7 +740,13 @@ begin
                                 -- sc.w  - 00011
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
-                                
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "sc.w" severity note;
                                 end if;
@@ -696,14 +755,13 @@ begin
                                 -- amoswap.w - 00001
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
-                                
                                 SequesterOrAwait(
                                     s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
                                     v_AtomicSequesterThread,
                                     v_StallThread
                                 );
-
-
                                 if ENABLE_DEBUG then
                                     report "amoswap.w" severity note;
                                 end if;
@@ -713,6 +771,13 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := ADD_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amoadd.w" severity note;
                                 end if;
@@ -722,6 +787,13 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := XOR_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amoxor.w" severity note;
                                 end if;
@@ -731,6 +803,13 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := AND_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amoand.w" severity note;
                                 end if;
@@ -740,6 +819,13 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := OR_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amoor.w" severity note;
                                 end if;
@@ -749,6 +835,13 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MIN_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amomin.w" severity note;
                                 end if;
@@ -758,6 +851,11 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MAX_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amomax.w" severity note;
                                 end if;
@@ -767,6 +865,11 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MINU_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amominu.w" severity note;
                                 end if;
@@ -776,6 +879,11 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MAXU_OPERATOR;
+                                SequesterOrAwait(
+                                    s_ThreadId,
+                                    v_AtomicSequesterThread,
+                                    v_StallThread
+                                );
                                 if ENABLE_DEBUG then
                                     report "amomaxu.w" severity note;
                                 end if;
@@ -864,37 +972,44 @@ begin
 
             end case;
         else
-            v_IsBranch            := '0';
-            v_Break               := '0';
-            v_IsSignExtend        := '1'; -- default case is sign extension
-            v_MemoryWriteEnable   := '0';
-            v_RegisterFileWriteEnable := '0';
-            v_RegisterSource      := RFSOURCE_FROMALU;
-            v_ALUSource           := ALUSOURCE_REGISTER;
-            v_ALUOperator         := ADD_OPERATOR;
-            v_BranchOperator      := BEQ_TYPE;
-            v_MemoryWidth         := WORD_TYPE;
-            v_Immediate           := 32x"0";
-            v_BranchMode          := BRANCHMODE_JAL_OR_BCC;
-            v_IPToALU             := '0';
-            v_StallThread         := (others => '0');
+            v_IsBranch                      := '0';
+            v_Break                         := '0';
+            v_IsSignExtend                  := '1'; -- default case is sign extension
+            v_MemoryWriteEnable             := '0';
+            v_RegisterFileWriteEnable       := '0';
+            v_RegisterSource                := RFSOURCE_FROMALU;
+            v_ALUSource                     := ALUSOURCE_REGISTER;
+            v_ALUOperator                   := ADD_OPERATOR;
+            v_BranchOperator                := BEQ_TYPE;
+            v_MemoryWidth                   := WORD_TYPE;
+            v_Immediate                     := 32x"0";
+            v_BranchMode                    := BRANCHMODE_JAL_OR_BCC;
+            v_IPToALU                       := '0';
+            v_PendingMemoryOperationsThread := (others => '0');
+            v_StallThread                   := (others => '0');
+            v_AtomicSequesterThread         := (others => '0');
+            v_AqStallPending                := (others => '0');
 
         end if;
 
-        o_IsBranch            <= v_IsBranch;
-        o_Break               <= v_Break;
-        o_IsSignExtend        <= v_IsSignExtend;
-        s_SignExtend          <= v_IsSignExtend;
-        o_MemoryWriteEnable   <= v_MemoryWriteEnable;
-        o_RegisterFileWriteEnable <= v_RegisterFileWriteEnable;
-        o_RegisterSource      <= v_RegisterSource;
-        o_ALUSource           <= v_ALUSource;
-        o_ALUOperator         <= v_ALUOperator;
-        o_BranchOperator      <= v_BranchOperator;
-        o_MemoryWidth         <= v_MemoryWidth;
-        o_Immediate           <= v_Immediate;
-        o_BranchMode          <= v_BranchMode;
-        o_IPToALU             <= v_IPToALU;
+        o_IsBranch                      <= v_IsBranch;
+        o_Break                         <= v_Break;
+        o_IsSignExtend                  <= v_IsSignExtend;
+        s_SignExtend                    <= v_IsSignExtend;
+        o_MemoryWriteEnable             <= v_MemoryWriteEnable;
+        o_RegisterFileWriteEnable       <= v_RegisterFileWriteEnable;
+        o_RegisterSource                <= v_RegisterSource;
+        o_ALUSource                     <= v_ALUSource;
+        o_ALUOperator                   <= v_ALUOperator;
+        o_BranchOperator                <= v_BranchOperator;
+        o_MemoryWidth                   <= v_MemoryWidth;
+        o_Immediate                     <= v_Immediate;
+        o_BranchMode                    <= v_BranchMode;
+        o_IPToALU                       <= v_IPToALU;
+        o_PendingMemoryOperationsThread <= v_PendingMemoryOperationsThread;
+        o_StallThread                   <= v_StallThread;
+        o_AtomicSequesterThread         <= v_AtomicSequesterThread;
+        o_AqStallPending                <= v_AqStallPending;
 
     end process;
 

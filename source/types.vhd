@@ -55,11 +55,15 @@ type alu_operator_t is (
     DIV_OPERATOR,
     DIVU_OPERATOR,
     REM_OPERATOR,
-    REMU_OPERATOR
+    REMU_OPERATOR,
+    MIN_OPERATOR,
+    MINU_OPERATOR,
+    MAX_OPERATOR,
+    MAXU_OPERATOR
 );
 
 pure function IsMulticycleALUOperator(
-    constant op : alu_operator_t
+    constant operator : alu_operator_t
 ) return boolean;
 
 -- Corresponding to each ALU source
@@ -229,10 +233,10 @@ end package types;
 
 package body types is
 
-pure function IsMulticycleALUOperator(constant op : alu_operator_t) return boolean is
+pure function IsMulticycleALUOperator(constant operator : alu_operator_t) return boolean is
 begin
 
-    case op is
+    case operator is
         when DIV_OPERATOR |
              DIVU_OPERATOR |
              REM_OPERATOR |
