@@ -22,7 +22,7 @@ entity branch_unit is
         i_LookupEnable      : in  std_logic := '0';
         i_LookupIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
         o_Prediction        : out std_logic;
-        o_BTBHit            : out std_logic;
+        o_BTBIsHit          : out std_logic;
         o_PredictedTarget   : out std_logic_vector(DATA_WIDTH-1 downto 0);
         o_PredictedOperator : out branch_operator_t;
 
@@ -181,7 +181,7 @@ begin
 
     end process;
 
-    o_BTBHit            <= s_LookupIsHit;
+    o_BTBIsHit          <= s_LookupIsHit;
     o_PredictedTarget   <= s_LookupTarget;
     o_PredictedOperator <= s_LookupOperator;
     o_Prediction        <= s_LookupPrediction;
