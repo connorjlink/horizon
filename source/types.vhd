@@ -62,10 +62,6 @@ type alu_operator_t is (
     MAXU_OPERATOR
 );
 
-pure function IsMulticycleALUOperator(
-    constant operator : alu_operator_t
-) return boolean;
-
 -- Corresponding to each ALU source
 type alu_source_t is (
     ALUSOURCE_REGISTER,
@@ -229,12 +225,36 @@ constant WB_NOP : WB_record_t := (
 
 ------------------------------------------------------
 
+
+------------------------------------------------------
+-- Utility functions
+------------------------------------------------------
+
+function IsMulticycleALUOperator(
+    constant operator : alu_operator_t
+) return boolean;
+
+function IsConditionalBranch(
+    constant operator : branch_operator_t
+) return boolean;
+
+function IsUnconditionalBranch(
+    constant operator : branch_operator_t
+) return boolean;
+
+function clog2(
+    constant n : natural
+) return natural;
+
+------------------------------------------------------
+
 end package types;
 
 package body types is
 
-pure function IsMulticycleALUOperator(constant operator : alu_operator_t) return boolean is
-begin
+function IsMulticycleALUOperator(
+    constant operator : alu_operator_t
+) return boolean is begin
 
     case operator is
         when DIV_OPERATOR |
@@ -247,6 +267,57 @@ begin
             return false;
 
     end case;
+
+end function;
+
+function IsConditionalBranch(
+    constant operator : branch_operator_t
+) return boolean is begin
+
+    case operator is
+
+        when BEQ_TYPE | BNE_TYPE | BLT_TYPE | BGE_TYPE | BLTU_TYPE | BGEU_TYPE =>
+            return true;
+
+        when others =>
+            return false;
+
+    end case;
+
+end function;
+
+function IsUnconditionalBranch(
+    constant operator : branch_operator_t
+) return boolean is begin
+
+    case operator is
+
+        when JAL_TYPE | JALR_TYPE =>
+            return true;
+        when others =>
+            return false;
+
+    end case;
+
+end function;
+
+function clog2(
+    constant n : natural
+) return natural is
+    variable v : natural := 1;
+    variable r : natural := 0;
+begin
+
+    if n <= 1 then
+        return 0;
+    end if;
+
+    while v < n loop
+        v := v * 2;
+        r := r + 1;
+    end loop;
+
+    return r;
 
 end function;
 

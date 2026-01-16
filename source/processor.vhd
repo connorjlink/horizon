@@ -444,7 +444,20 @@ begin
             i_DS2            => s_BranchOperand2,
             i_BranchOperator => IDEX_ID_buf.BranchOperator,
             o_BranchTaken    => s_BranchTaken,
-            o_BranchNotTaken => s_BranchNotTaken
+            o_BranchNotTaken => s_BranchNotTaken,
+
+            -- Predictor interfaces not yet wired into the pipeline
+            i_LookupEnable   => '0',
+            i_LookupPC       => (others => '0'),
+            o_Prediction     => open,
+            o_BTBHit         => open,
+            o_PredTarget     => open,
+            o_PredOperator   => open,
+            i_UpdateEnable   => '0',
+            i_UpdatePC       => (others => '0'),
+            i_UpdateTarget   => (others => '0'),
+            i_UpdateTaken    => '0',
+            i_UpdateOperator => BRANCH_NONE
         );
 
     -----------------------------------------------------

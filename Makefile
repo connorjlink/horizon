@@ -69,6 +69,7 @@ endef
 
 SOURCE := \
 	./source/types.vhd \
+	./source/saturating_counter.vhd \
 	./source/not_1.vhd ./source/not_N.vhd ./source/and_2.vhd ./source/or_2.vhd ./source/xor_2.vhd \
 	./source/multiplexer_2to1.vhd ./source/multiplexer_2to1_N.vhd ./source/multiplexer_32to1.vhd \
 	./source/register_1.vhd ./source/register_N.vhd \

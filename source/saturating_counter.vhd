@@ -25,6 +25,8 @@ architecture implementation of saturating_counter is
 
 begin
 
+    o_Counter <= s_Counter;
+
     process(
         i_Clock
     )

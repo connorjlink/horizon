@@ -30,6 +30,7 @@ signal s_iDS2            : std_logic_vector(31 downto 0) := 32x"0";
 signal s_iBranchOperator : branch_operator_t := BEQ_TYPE;
 signal s_oBranchTaken    : std_logic;
 signal s_oBranchNotTaken : std_logic;
+signal s_oPrediction     : std_logic;
 
 begin
 
@@ -41,7 +42,19 @@ begin
             i_DS2            => s_iDS2,
             i_BranchOperator => s_iBranchOperator,
             o_BranchTaken    => s_oBranchTaken,
-            o_BranchNotTaken => s_oBranchNotTaken
+            o_BranchNotTaken => s_oBranchNotTaken,
+
+            i_LookupEnable   => '0',
+            i_LookupIP       => (others => '0'),
+            o_Prediction     => s_oPrediction,
+            o_BTBHit         => open,
+            o_PredTarget     => open,
+            o_PredOperator   => open,
+            i_UpdateEnable   => '0',
+            i_UpdatePC       => (others => '0'),
+            i_UpdateTarget   => (others => '0'),
+            i_UpdateTaken    => '0',
+            i_UpdateOperator => BRANCH_NONE
         );
 
     p_Clock: process
