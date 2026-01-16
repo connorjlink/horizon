@@ -30,12 +30,33 @@ signal s_oRS1         : std_logic_vector(4 downto 0);
 signal s_oRS2         : std_logic_vector(4 downto 0);
 signal s_oFunc3       : std_logic_vector(2 downto 0);
 signal s_oFunc7       : std_logic_vector(6 downto 0);
-signal s_oiImmediate        : std_logic_vector(11 downto 0);
-signal s_osImmediate        : std_logic_vector(11 downto 0);
-signal s_obImmediate        : std_logic_vector(12 downto 0);
-signal s_ouImmediate        : std_logic_vector(31 downto 12);
-signal s_ojImmediate        : std_logic_vector(20 downto 0);
-signal s_ohImmediate        : std_logic_vector(4 downto 0);
+signal s_oFunc5       : std_logic_vector(4 downto 0);
+signal s_oAq          : std_logic;
+signal s_oRl          : std_logic;
+signal s_oiImmediate  : std_logic_vector(11 downto 0);
+signal s_osImmediate  : std_logic_vector(11 downto 0);
+signal s_obImmediate  : std_logic_vector(12 downto 0);
+signal s_ouImmediate  : std_logic_vector(31 downto 12);
+signal s_ojImmediate  : std_logic_vector(20 downto 0);
+signal s_ohImmediate  : std_logic_vector(4 downto 0);
+
+-- Compressed (C) instruction field signals
+signal s_oC_Opcode       : std_logic_vector(1 downto 0);
+signal s_oC_Func2        : std_logic_vector(1 downto 0);
+signal s_oC_Func3        : std_logic_vector(2 downto 0);
+signal s_oC_Func4        : std_logic_vector(3 downto 0);
+signal s_oC_Func6        : std_logic_vector(5 downto 0);
+signal s_oC_iImmediate   : std_logic_vector(5 downto 0);
+signal s_oC_jImmediate   : std_logic_vector(11 downto 0);
+signal s_oC_uImmediate   : std_logic_vector(17 downto 0);
+signal s_oC_bImmediate   : std_logic_vector(8 downto 0);
+signal s_oC_wImmediate   : std_logic_vector(9 downto 0);
+signal s_oC_lImmediate   : std_logic_vector(6 downto 0);
+signal s_oC_sImmediate   : std_logic_vector(7 downto 0);
+signal s_oC_RD_RS1       : std_logic_vector(4 downto 0);
+signal s_oC_RS2          : std_logic_vector(4 downto 0);
+signal s_oC_RS1_Prime    : std_logic_vector(2 downto 0);
+signal s_oC_RD_RS2_Prime : std_logic_vector(2 downto 0);
 
 begin
 
@@ -49,12 +70,32 @@ begin
             o_RS2         => s_oRS2,
             o_Func3       => s_oFunc3,
             o_Func7       => s_oFunc7,
-            o_iImmediate        => s_oiImmediate,
-            o_sImmediate        => s_osImmediate,
-            o_bImmediate        => s_obImmediate,
-            o_uImmediate        => s_ouImmediate,
-            o_jImmediate        => s_ojImmediate,
-            o_hImmediate        => s_ohImmediate
+            o_Func5       => s_oFunc5,
+            o_Aq          => s_oAq,
+            o_Rl          => s_oRl,
+            o_iImmediate  => s_oiImmediate,
+            o_sImmediate  => s_osImmediate,
+            o_bImmediate  => s_obImmediate,
+            o_uImmediate  => s_ouImmediate,
+            o_jImmediate  => s_ojImmediate,
+            o_hImmediate  => s_ohImmediate,
+
+            o_C_Opcode       => s_oC_Opcode,
+            o_C_Func2        => s_oC_Func2,
+            o_C_Func3        => s_oC_Func3,
+            o_C_Func4        => s_oC_Func4,
+            o_C_Func6        => s_oC_Func6,
+            o_C_iImmediate   => s_oC_iImmediate,
+            o_C_jImmediate   => s_oC_jImmediate,
+            o_C_uImmediate   => s_oC_uImmediate,
+            o_C_bImmediate   => s_oC_bImmediate,
+            o_C_wImmediate   => s_oC_wImmediate,
+            o_C_lImmediate   => s_oC_lImmediate,
+            o_C_sImmediate   => s_oC_sImmediate,
+            o_C_RD_RS1       => s_oC_RD_RS1,
+            o_C_RS2          => s_oC_RS2,
+            o_C_RS1_Prime    => s_oC_RS1_Prime,
+            o_C_RD_RS2_Prime => s_oC_RD_RS2_Prime
         );
 
     p_Clock: process

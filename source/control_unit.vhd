@@ -57,6 +57,24 @@ signal s_decuImmediate : std_logic_vector(31 downto 12);
 signal s_decjImmediate : std_logic_vector(20 downto 0);
 signal s_dechImmediate : std_logic_vector(4 downto 0);
 
+-- Compressed (C) decoder fields
+signal s_decCOpcode       : std_logic_vector(1 downto 0);
+signal s_decCFunc2        : std_logic_vector(1 downto 0);
+signal s_decCFunc3        : std_logic_vector(2 downto 0);
+signal s_decCFunc4        : std_logic_vector(3 downto 0);
+signal s_decCFunc6        : std_logic_vector(5 downto 0);
+signal s_decCiImmediate   : std_logic_vector(5 downto 0);
+signal s_decCjImmediate   : std_logic_vector(11 downto 0);
+signal s_decCuImmediate   : std_logic_vector(17 downto 0);
+signal s_decCbImmediate   : std_logic_vector(8 downto 0);
+signal s_decCwImmediate   : std_logic_vector(9 downto 0);
+signal s_decClImmediate   : std_logic_vector(6 downto 0);
+signal s_decCsImmediate   : std_logic_vector(7 downto 0);
+signal s_decCRD_RS1       : std_logic_vector(4 downto 0);
+signal s_decCRS2          : std_logic_vector(4 downto 0);
+signal s_decCRS1Prime     : std_logic_vector(2 downto 0);
+signal s_decCRD_RS2Prime  : std_logic_vector(2 downto 0);
+
 -- Signals to hold the results from the immediate extenders
 signal s_extiImmediate : std_logic_vector(31 downto 0);
 signal s_extsImmediate : std_logic_vector(31 downto 0);
@@ -139,8 +157,8 @@ begin
             1 when '1',
             0 when others;
 
-    -- 4-byte instructions are indicated by a 11 in the two least-significant bits of the opcode
-    o_IsStride4 <= '1' when s_decOpcode(1 downto 0) = 2b"11" else
+    -- 4-byte instructions are indicated by a 11 in the two least-significant bits
+    o_IsStride4 <= '1' when s_decCOpcode = 2b"11" else
                   '0';
 
     -- I-format
@@ -203,6 +221,7 @@ begin
     e_InstructionDecoder: entity work.instruction_decoder
         port map(
             i_Instruction => i_Instruction,
+            -- Uncompressed instruction fields
             o_Opcode      => s_decOpcode,
             o_RD          => o_RD,
             o_RS1         => o_RS1,
@@ -217,7 +236,24 @@ begin
             o_bImmediate  => s_decbImmediate,
             o_uImmediate  => s_decuImmediate,
             o_jImmediate  => s_decjImmediate,
-            o_hImmediate  => s_dechImmediate
+            o_hImmediate  => s_dechImmediate,
+            -- Compressed instruction fields
+            o_C_Opcode       => s_decCOpcode,
+            o_C_Func2        => s_decCFunc2,
+            o_C_Func3        => s_decCFunc3,
+            o_C_Func4        => s_decCFunc4,
+            o_C_Func6        => s_decCFunc6,
+            o_C_iImmediate   => s_decCiImmediate,
+            o_C_jImmediate   => s_decCjImmediate,
+            o_C_uImmediate   => s_decCuImmediate,
+            o_C_bImmediate   => s_decCbImmediate,
+            o_C_wImmediate   => s_decCwImmediate,
+            o_C_lImmediate   => s_decClImmediate,
+            o_C_sImmediate   => s_decCsImmediate,
+            o_C_RD_RS1       => s_decCRD_RS1,
+            o_C_RS2          => s_decCRS2,
+            o_C_RS1_Prime    => s_decCRS1Prime,
+            o_C_RD_RS2_Prime => s_decCRD_RS2Prime
         );
 
     process(
@@ -245,7 +281,7 @@ begin
 
     begin 
 
-        v_Quadrant := i_Instruction(1 downto 0);
+        v_Quadrant := s_decCOpcode;
 
         if i_Reset = '0' then
             v_IsBranch                      := '0';
@@ -343,7 +379,7 @@ begin
 
                         when 3b"010" =>
                             -- c.li
-                            if s_oC_RD_RS1 /= "00000" then
+                            if s_decCRD_RS1 /= "00000" then
                                 -- TODO:
                                 null;
 
@@ -355,9 +391,9 @@ begin
 
                         when 3b"011" =>
                             -- c.addi16sp / c.lui
-                            if s_oC_RD_RS1 /= "00000" and s_oC_uImmediate /= 18b"0" then
+                            if s_decCRD_RS1 /= "00000" and s_decCuImmediate /= 18b"0" then
 
-                                if s_oC_RD_RS1 = "00010" then
+                                if s_decCRD_RS1 = "00010" then
                                     -- c.addi16sp
                                     null;
 
@@ -1273,6 +1309,12 @@ begin
                             end if;
 
                     end case;
+
+                when others =>
+                    v_Break := '1';
+                    if ENABLE_DEBUG then
+                        report "Illegal Instruction (0x" & to_string(i_Instruction) & ")" severity note;
+                    end if;
 
             end case;
 

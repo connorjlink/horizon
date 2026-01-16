@@ -79,6 +79,7 @@ SOURCE := \
 	./source/addersubtractor_N.vhd \
 	./source/barrel_shifter.vhd \
 	./source/instruction_decoder.vhd \
+	./source/instruction_predecoder.vhd \
 	./source/instruction_pointer.vhd \
 	./source/register_file.vhd \
 	./source/memory.vhd \

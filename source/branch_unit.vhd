@@ -101,7 +101,7 @@ begin
 
     e_InstructionPredecoder : entity work.instruction_predecoder
         port map(
-            i_Instruction    => -- TODO: need the instruction at i_LookupIP,
+            i_Instruction    => i_LookupInstruction,
             o_BranchOperator => s_PredecoderBranchOperator
         );
 

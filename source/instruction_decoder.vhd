@@ -44,7 +44,7 @@ entity instruction_decoder is
         o_C_RD_RS1       : out std_logic_vector(4 downto 0);
         o_C_RS2          : out std_logic_vector(4 downto 0);
         o_C_RS1_Prime    : out std_logic_vector(2 downto 0);
-        o_C_RD_RS2_Prime : out std_logic_vector(2 downto 0);
+        o_C_RD_RS2_Prime : out std_logic_vector(2 downto 0)
     );
 end instruction_decoder;
 

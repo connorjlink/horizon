@@ -10,7 +10,7 @@ use work.types.all;
 entity instruction_predecoder is
     port(
         i_Instruction    : in  std_logic_vector(31 downto 0);
-        o_BranchOperator : out branch_operator_t;
+        o_BranchOperator : out branch_operator_t
     );
 end instruction_predecoder;
 
@@ -30,10 +30,9 @@ begin
         v_IsCompressed := IsCompressedInstruction(i_Instruction);
 
         if v_IsCompressed then
-
+            null;
 
         else
-
             -- Opcode bits [6:0]
             case i_Instruction(6 downto 0) is
 

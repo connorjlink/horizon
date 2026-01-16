@@ -23,6 +23,7 @@ constant CLOCK_PERIOD : time := CLOCK_HALF_PERIOD * 2;
 
 -- Testbench signals
 signal s_Clock, s_Reset : std_logic := '0';
+signal s_iThreadId      : std_logic := '0';
 
 -- Stimulus signals
 signal s_iInstruction         : std_logic_vector(31 downto 0) := 32x"0";
@@ -43,32 +44,44 @@ signal s_oIsBranch            : std_logic;
 signal s_oIsStride4           : std_logic;
 signal s_oIsSignExtend        : std_logic;
 signal s_oIPToALU             : std_logic;
+signal s_oRS1ToMemoryAddress  : std_logic;
+
+signal s_oPendingMemoryOperationsThread : std_logic_vector(THREAD_COUNT-1 downto 0);
+signal s_oStallThread                  : std_logic_vector(THREAD_COUNT-1 downto 0);
+signal s_oAtomicSequesterThread        : std_logic_vector(THREAD_COUNT-1 downto 0);
+signal s_oAqStallPendingThread         : std_logic_vector(THREAD_COUNT-1 downto 0);
 
 begin
 
     -- Design-under-test instantiation
     DUT: entity work.control_unit
         port map(
-            i_Clock               => s_Clock,
-            i_Reset               => s_Reset,
-            i_Instruction         => s_iInstruction,
-            o_MemoryWriteEnable   => s_oMemoryWriteEnable,
+            i_Clock                   => s_Clock,
+            i_Reset                   => s_Reset,
+            i_Instruction             => s_iInstruction,
+            i_ThreadId                => s_iThreadId,
+            o_MemoryWriteEnable       => s_oMemoryWriteEnable,
             o_RegisterFileWriteEnable => s_oRegisterFileWriteEnable,
-            o_RegisterSource      => s_oRegisterSource,
-            o_ALUSource           => s_oALUSource,
-            o_ALUOperator         => s_oALUOperator,
-            o_BranchOperator      => s_oBranchOperator,
-            o_BranchMode          => s_oBranchMode,
-            o_MemoryWidth         => s_oMemoryWidth,
-            o_RD                  => s_oRD,
-            o_RS1                 => s_oRS1,
-            o_RS2                 => s_oRS2,
-            o_Immediate           => s_oImmediate,
-            o_Break               => s_oBreak,
-            o_IsBranch            => s_oIsBranch,
-            o_IsStride4           => s_oIsStride4,
-            o_IsSignExtend        => s_oIsSignExtend,
-            o_IPToALU             => s_oIPToALU
+            o_RegisterSource          => s_oRegisterSource,
+            o_ALUSource               => s_oALUSource,
+            o_ALUOperator             => s_oALUOperator,
+            o_BranchOperator          => s_oBranchOperator,
+            o_BranchMode              => s_oBranchMode,
+            o_MemoryWidth             => s_oMemoryWidth,
+            o_RD                      => s_oRD,
+            o_RS1                     => s_oRS1,
+            o_RS2                     => s_oRS2,
+            o_Immediate               => s_oImmediate,
+            o_Break                   => s_oBreak,
+            o_IsBranch                => s_oIsBranch,
+            o_IsStride4               => s_oIsStride4,
+            o_IsSignExtend            => s_oIsSignExtend,
+            o_IPToALU                 => s_oIPToALU,
+            o_RS1ToMemoryAddress      => s_oRS1ToMemoryAddress,
+            o_PendingMemoryOperationsThread => s_oPendingMemoryOperationsThread,
+            o_StallThread                   => s_oStallThread,
+            o_AtomicSequesterThread         => s_oAtomicSequesterThread,
+            o_AqStallPendingThread          => s_oAqStallPendingThread
         );
 
 
