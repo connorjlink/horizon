@@ -84,15 +84,27 @@ signal s_PHT : pht_array_t := (others => (others => '0'));
 signal s_PHTUpdateEnable : std_logic := '0';
 signal s_PHTUpdateIndex  : natural range 0 to PHT_ENTRIES-1 := 0;
 
-signal s_LookupIsHit     : std_logic := '0';
-signal s_LookupWay       : integer range 0 to BTB_WAYS-1 := 0;
-signal s_LookupOperator  : branch_operator_t := BRANCH_NONE;
-signal s_LookupTarget    : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-signal s_LookupPrediction: std_logic := '0';
+signal s_LookupIsHit      : std_logic := '0';
+signal s_LookupWay        : integer range 0 to BTB_WAYS-1 := 0;
+signal s_LookupOperator   : branch_operator_t := BRANCH_NONE;
+signal s_LookupTarget     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+signal s_LookupPrediction : std_logic := '0';
+
+signal s_PredecoderBranchOperator : branch_operator_t := BRANCH_NONE;
 
 begin 
 
-    -- TODO: If branch not already in buffer, predict not taken for forward branches, taken for backward branches
+    -----------------------------------------------------
+    -- Instruction Flow
+    -----------------------------------------------------
+
+    e_InstructionPredecoder : entity work.instruction_predecoder
+        port map(
+            i_Instruction    => -- TODO: need the instruction at i_LookupIP,
+            o_BranchOperator => s_PredecoderBranchOperator
+        );
+
+    -----------------------------------------------------
 
     -----------------------------------------------------
     -- Pattern History Table (storage)
@@ -169,7 +181,12 @@ begin
             end if;
 
         else
-            v_PredictedTaken := '0';
+            -- no hit; can predict taken only for unconditional branches
+            if IsUnconditionalBranch(s_PredecoderBranchOperator) then
+                v_PredictedTaken := '1';
+            else
+                v_PredictedTaken := '0';
+            end if;
 
         end if;
 
@@ -195,50 +212,56 @@ begin
     )
         variable v_BTBSetIndex : natural range 0 to BTB_SETS-1;
         variable v_BTBTag      : std_logic_vector(BTB_TAG_BITS-1 downto 0);
-        variable v_PHTIndex : natural range 0 to PHT_ENTRIES-1;
-        variable v_BTBIsHit      : boolean;
-        variable v_Way      : integer range 0 to BTB_WAYS-1;
-        variable v_Victim   : integer range 0 to BTB_WAYS-1;
-        variable v_C        : pht_counter_t;
+        variable v_PHTIndex    : natural range 0 to PHT_ENTRIES-1;
+        variable v_BTBIsHit    : boolean;
+        variable v_Way         : integer range 0 to BTB_WAYS-1;
+        variable v_Victim      : integer range 0 to BTB_WAYS-1;
     begin
+
         if rising_edge(i_Clock) then
 
-            -- Optional: touch replacement state on lookup hits
             if i_LookupEnable = '1' and s_LookupIsHit = '1' then
+
                 v_BTBSetIndex := to_integer(unsigned(i_LookupIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
+
                 if s_LookupWay = 0 then
                     s_BTBReplaceWay(v_BTBSetIndex) <= '1';
                 else
                     s_BTBReplaceWay(v_BTBSetIndex) <= '0';
                 end if;
+
             end if;
 
             if i_UpdateEnable = '1' and i_UpdateOperator /= BRANCH_NONE then
                 v_BTBSetIndex := to_integer(unsigned(i_UpdateIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
                 v_BTBTag      := i_UpdateIP(BTB_TAG_MSB downto BTB_TAG_LSB);
 
-                -- BTB update/insert
                 v_BTBIsHit := false;
                 v_Way := 0;
                 for i in 0 to BTB_WAYS-1 loop
+
                     if s_BTB(v_BTBSetIndex)(i).IsValid = '1' and s_BTB(v_BTBSetIndex)(i).Tag = v_BTBTag then
                         v_BTBIsHit := true;
                         v_Way := i;
                     end if;
+
                 end loop;
 
                 if v_BTBIsHit then
+
                     s_BTB(v_BTBSetIndex)(v_Way).IsValid        <= '1';
                     s_BTB(v_BTBSetIndex)(v_Way).Tag            <= v_BTBTag;
                     s_BTB(v_BTBSetIndex)(v_Way).TargetAddress  <= i_UpdateTarget;
                     s_BTB(v_BTBSetIndex)(v_Way).BranchOperator <= i_UpdateOperator;
+
                     if v_Way = 0 then
                         s_BTBReplaceWay(v_BTBSetIndex) <= '1';
                     else
                         s_BTBReplaceWay(v_BTBSetIndex) <= '0';
                     end if;
+
                 else
-                    -- Prefer an invalid way; otherwise use replacement bit.
+                    -- invalid way or use replacement bit
                     if s_BTB(v_BTBSetIndex)(0).IsValid = '0' then
                         v_Victim := 0;
                     elsif s_BTB(v_BTBSetIndex)(1).IsValid = '0' then
@@ -248,6 +271,7 @@ begin
                         if s_BTBReplaceWay(v_BTBSetIndex) = '1' then
                             v_Victim := 1;
                         end if;
+
                     end if;
 
                     s_BTB(v_BTBSetIndex)(v_Victim).IsValid        <= '1';
@@ -260,10 +284,13 @@ begin
                     else
                         s_BTBReplaceWay(v_BTBSetIndex) <= '0';
                     end if;
+
                 end if;
 
             end if;
+
         end if;
+
     end process;
 
 
