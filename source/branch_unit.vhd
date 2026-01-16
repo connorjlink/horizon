@@ -10,8 +10,8 @@ use work.types.all;
 entity branch_unit is
     port(
         i_Clock          : in  std_logic;
-        i_DS1            : in  std_logic_vector(31 downto 0);
-        i_DS2            : in  std_logic_vector(31 downto 0);
+        i_DS1            : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        i_DS2            : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         i_BranchOperator : in  branch_operator_t;
         o_BranchTaken    : out std_logic;
         o_BranchNotTaken : out std_logic;
@@ -21,22 +21,45 @@ end branch_unit;
 
 architecture implementation of branch_unit is
 
--- TODO: 256x2-way set associative branch buffer for branch prediction results
--- store Address(1) as offset (diffentiates C and non-C instructions)
--- store Address(9 downto 2) as index
--- store Address(31 downto 10) as tag
--- Prediction intermediate: saturating 2-bit counter per entry: 00 = strongly not taken, 01 = weakly not taken, 10 = weakly taken, 11 = strongly taken
+-- TODO: 128 sets x 2-way set associative branch target buffer
+-- BTB should store the predicted target address and the branch type (branch_operator_t)
+
+-- default LSB for branch addresses is half-word aligned (compressed instructions)
+constant BRANCH_LSB : natural := 1;
+
+constant BTB_SETS       : natural := 128;
+constant BTB_WAYS       : natural := 2;
+constant BTB_INDEX_BITS : natural := clog2(BTB_SETS);
+constant BTB_INDEX_LSB  : natural := BRANCH_LSB;
+constant BTB_INDEX_MSB  : natural := BTB_INDEX_LSB + BTB_INDEX_BITS;
+constant BTB_TAG_LSB    : natural := BTB_INDEX_MSB + 1;
+constant BTB_TAG_MSB    : natural := DATA_WIDTH - 1;
+constant BTB_TAG_BITS   : natural := BTB_TAG_MSB - BTB_TAG_LSB + 1;
+
+record btb_entry_t is
+    signal IsValid        : std_logic;
+    signal Tag            : std_logic_vector(BTB_TAG_BITS-1 downto 0);
+    signal TargetAddress  : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal BranchOperator : branch_operator_t;
+end record;
+
+-- PHT should be 256 entries, directly mapped
+constant PHT_ENTRIES : natural := 256;
+constant PHT_INDEX_BITS : natural := clog2(PHT_ENTRIES);
+constant PHT_INDEX_LSB : natural := BRANCH_LSB;
+constant PHT_INDEX_MSB : natural := PHT_INDEX_LSB + PHT_INDEX_BITS - 1;
 
 begin 
 
     -- If branch not already in buffer, predict not taken for forward branches, taken for backward branches
 
     -----------------------------------------------------
-    -- Branch Buffer Generation
+    -- Pattern History Table
     -----------------------------------------------------
 
-    g_BranchBuffer: for i in 0 to 255 generate
+    g_PatternHistoryTable: for i in 0 to PHT_ENTRIES-1 generate
     
+        -- 2-bit counter: 00 = strongly not taken, 01 = weakly not taken, 10 = weakly taken, 11 = strongly taken
         e_SaturatingCounter: entity work.saturating_counter
             generic map(
                 N => 2
@@ -48,7 +71,7 @@ begin
                 o_Counter     => open
             );
 
-    end generate g_BranchBuffer;
+    end generate g_PatternHistoryTable;
 
     -----------------------------------------------------
 

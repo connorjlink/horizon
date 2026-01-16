@@ -14,10 +14,10 @@ entity arithmetic_logic_unit is
     port(
         i_Clock    : in  std_logic;
         i_Reset    : in  std_logic;
-        i_A        : in  std_logic_vector(31 downto 0);
-        i_B        : in  std_logic_vector(31 downto 0);
+        i_A        : in  std_logic_vector(N-1 downto 0);
+        i_B        : in  std_logic_vector(N-1 downto 0);
         i_Operator : in  alu_operator_t;
-        o_F        : out std_logic_vector(31 downto 0);
+        o_F        : out std_logic_vector(N-1 downto 0);
         o_Carry    : out std_logic;
         o_Done     : out std_logic
     );

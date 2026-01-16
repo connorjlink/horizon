@@ -3,14 +3,16 @@
 
 library IEEE;
 use IEEE.std_logic_1164.all;
+library work;
+use work.types.all;
 
 entity barrel_shifter is
     port(
-        i_A            : in  std_logic_vector(31 downto 0);
+        i_A            : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         i_B            : in  std_logic_vector(4 downto 0);
         i_IsArithmetic : in  std_logic; -- 0: logical, 1: arithmetic
         i_IsRight      : in  std_logic; -- 0: left, 1: right
-        o_S            : out std_logic_vector(31 downto 0)
+        o_S            : out std_logic_vector(DATA_WIDTH-1 downto 0)
     );
 end barrel_shifter;
 
