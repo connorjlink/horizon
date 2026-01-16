@@ -45,8 +45,6 @@ entity instruction_decoder is
         o_C_RS2          : out std_logic_vector(4 downto 0);
         o_C_RS1_Prime    : out std_logic_vector(2 downto 0);
         o_C_RD_RS2_Prime : out std_logic_vector(2 downto 0);
-
-        o_Break          : out std_logic
     );
 end instruction_decoder;
 
@@ -101,8 +99,6 @@ begin
 
     o_C_Opcode <= i_Instruction(1 downto 0);
 
-    -- TODO: assign in the process statement
-    o_C_Func2 <= i_Instruction(11 downto 10);
     o_C_Func2 <= i_Instruction(6 downto 5);
 
     o_C_Func3 <= i_Instruction(15 downto 13);
@@ -154,103 +150,6 @@ begin
     o_C_lImmediate(5 downto 3) <= i_Instruction(12 downto 10);
     o_C_lImmediate(2)          <= i_Instruction(6);
     o_C_lImmediate(1 downto 0) <= (others => '0');
-
-
-    process(
-        i_Instruction
-    )
-
-        variable v_Quadrant     : std_logic_vector(1 downto 0);
-        variable v_C_uImmediate : std_logic_vector(5 downto 0);
-        variable v_Func2        : std_logic_vector(1 downto 0);
-        variable v_Break        : std_logic := '0'; 
-
-    begin
-
-        v_Quadrant := i_Instruction(1 downto 0);
-
-        case v_Quadrant is
-
-            when "00" =>
-                case o_C_Func3 is
-
-                    when "000" =>
-                        -- c.addi4spn
-
-
-                end case;
-
-            when "01" =>
-                case o_C_Func3 is
-
-                    when "010" =>
-                        -- c.li
-                        if o_C_RD_RS1 = "00000" then
-                            v_Break := '1';
-                            report "Illegal instruction: c.li with rd = x0";
-
-                        end if;
-
-                    when "011" =>
-                        -- c.lui / c.addi16sp
-                        if o_C_RD_RS1 = "00000" or o_C_uImmediate = 18b"0" then
-                            v_Break := '1';
-                            report "Illegal instruction: c.lui with rd = x0/x2 or immediate = 0";
-
-                        end if;
-
-                    when "100" =>
-                        -- c.srli / c.srai / c.andi / c.sub / c.xor / c.or / c.and
-                        v_Func2 := i_Instruction(11 downto 10);
-
-                    when "100" =>
-                        -- 
-                        null;
-
-                    when others =>
-                        -- ignore for C extension
-                        null;
-
-                end case;
-
-            when "10" =>
-                case o_C_Func3 is
-
-                    when "000" =>
-                        -- c.slli
-                        null;
-
-                    when "010" =>
-                        -- c.lw / c.lwsp
-                        null;
-
-                    when "100" =>
-                        -- c.jr / c.mv / c.ebreak / c.jalr / c.add
-                        null;
-
-                    when "110" =>
-                        -- c.sw / c.swsp
-                        null;
-
-                    when others =>
-                        -- ignore for C extension
-                        null;
-
-                end case;
-
-            when others =>
-                -- ignore for C extension
-                null;
-
-        end case;
-
-        o_Func2 <= v_Func2;
-        o_Break <= v_Break;
-
-    end process;
-
-    o_C_iImmediate(5)          <= i_Instruction(12);
-    o_C_iImmediate(4 downto 0) <= i_Instruction(6 downto 2);
 
     -----------------------------------------------------
     

@@ -241,11 +241,11 @@ begin
         variable v_PendingMemoryOperationsThread : std_logic_vector(THREAD_COUNT-1 downto 0);
         variable v_StallThread                   : std_logic_vector(THREAD_COUNT-1 downto 0);
         variable v_AtomicSequesterThread         : std_logic_vector(THREAD_COUNT-1 downto 0);
-        variable v_AqStallPendingThread                : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_AqStallPendingThread          : std_logic_vector(THREAD_COUNT-1 downto 0);
 
     begin 
 
-        v_Quadrant <= i_Instruction(1 downto 0);
+        v_Quadrant := i_Instruction(1 downto 0);
 
         if i_Reset = '0' then
             v_IsBranch                      := '0';
@@ -271,16 +271,259 @@ begin
             case v_Quadrant is
 
                 when "00" =>
-                    
+                    -- compressed instructions (quadrant 0)
+                    case i_Instruction(15 downto 13) is
+
+                        when 3b"000" =>
+                            -- c.addi4spn
+                            null;
+
+                        when 3b"001" =>
+                            -- c.fld
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fld (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"010" =>
+                            -- c.lw
+                            null;
+
+                        when 3b"011" =>
+                            -- c.flw
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.flw (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"100" =>
+                            -- reserved
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "Illegal instruction: reserved quadrant 0 compressed instruction" severity note;
+                            end if;
+
+                        when 3b"101" =>
+                            -- c.fsd
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fsd (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"110" =>
+                            -- c.sw
+                            null;
+
+                        when 3b"111" =>
+                            -- c.fsw
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fsw (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when others =>
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "Illegal instruction: quadrant 0 compressed instruction" severity note;
+                            end if;
+
+                    end case;
 
                 when "01" =>
-                    null;
+                    -- compressed instructions (quadrant 1)
+                    case i_Instruction(15 downto 13) is
+
+                        when 3b"000" =>
+                            -- c.addi / c.nop
+                            null;
+
+                        when 3b"001" =>
+                            -- c.jal
+                            null;
+
+                        when 3b"010" =>
+                            -- c.li
+                            if s_oC_RD_RS1 /= "00000" then
+                                -- TODO:
+                                null;
+
+                            else
+                                v_Break := '1';
+                                report "c.li (Illegal Instruction with rd = x0)" severity note;
+                            
+                            end if;
+
+                        when 3b"011" =>
+                            -- c.addi16sp / c.lui
+                            if s_oC_RD_RS1 /= "00000" and s_oC_uImmediate /= 18b"0" then
+
+                                if s_oC_RD_RS1 = "00010" then
+                                    -- c.addi16sp
+                                    null;
+
+                                else
+                                    -- c.lui
+                                    null;
+
+                                end if;
+
+                            else
+                                v_Break := '1';
+                                report "c.lui (Illegal Instruction with rd = x0/x2 or immediate = 0)" severity note;
+
+                            end if;
+
+                        when 3b"100" =>
+                            -- c.srli / c.srai / c.andi / c.sub / c.xor / c.or / c.and
+                            case i_Instruction(11 downto 10) is
+
+                                when 2b"00" =>
+                                    -- c.srli
+                                    null;
+
+                                when 2b"01" =>
+                                    -- c.srai
+                                    null;
+
+                                when 2b"10" =>
+                                    -- c.andi
+                                    null;
+
+                                when 2b"11" =>
+                                    -- c.sub / c.xor / c.or / c.and
+                                    case i_Instruction(6 downto 5) is
+
+                                        when "00" =>
+                                            -- c.sub
+                                            null;
+
+                                        when "01" =>
+                                            -- c.xor
+                                            null;
+
+                                        when "10" =>
+                                            -- c.or
+                                            null;
+
+                                        when "11" =>
+                                            -- c.and
+                                            null;
+
+                                        when others =>
+                                            v_Break := '1';
+                                            if ENABLE_DEBUG then
+                                                report "Illegal instruction: quadrant 1 compressed instruction" severity note;
+                                            end if;
+
+                                    end case;
+
+                                when others =>
+                                    v_Break := '1';
+                                    if ENABLE_DEBUG then
+                                        report "Illegal instruction: quadrant 1 compressed instruction" severity note;
+                                    end if;
+
+                            end case;
+
+                        when 3b"101" =>
+                            -- c.j
+                            null;
+
+                        when 3b"110" =>
+                            -- c.beqz
+                            null;
+
+                        when 3b"111" =>
+                            -- c.bnez
+                            null;
+
+                        when others =>
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "Illegal instruction: quadrant 1 compressed instruction" severity note;
+                            end if;
+
+                    end case;
 
                 when "10" =>
-                    null;
+                    -- compressed instructions (quadrant 2)
+                    case i_Instruction(15 downto 13) is
+
+                        when 3b"000" =>
+                            -- c.slli
+                            null;
+
+                        when 3b"001" =>
+                            -- c.fldsp
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fldsp (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"010" =>
+                            -- c.lwsp
+                            null;
+
+                        when 3b"011" =>
+                            -- c.flwsp
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.flwsp (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"100" =>
+                            -- C.JR / C.MV / C.EBREAK / C.JALR / C.ADD
+                            if i_Instruction(12) = '0' then
+                                if i_Instruction(6 downto 2) = 5b"00000" then
+                                    -- C.JR
+                                    null;
+                                else
+                                    -- C.MV
+                                    null;
+                                end if;
+                            else
+                                if i_Instruction(6 downto 2) = 5b"00000" then
+                                    if i_Instruction(11 downto 7) = 5b"00000" then
+                                        -- C.EBREAK
+                                        null;
+                                    else
+                                        -- C.JALR
+                                        null;
+                                    end if;
+                                else
+                                    -- C.ADD
+                                    null;
+                                end if;
+                            end if;
+
+                        when 3b"101" =>
+                            -- c.fsdsp
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fsdsp (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when 3b"110" =>
+                            -- c.swsp
+                            null;
+
+                        when 3b"111" =>
+                            -- c.fswsp
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "c.fswsp (Illegal Compressed Instruction)" severity note;
+                            end if;
+
+                        when others =>
+                            v_Break := '1';
+                            if ENABLE_DEBUG then
+                                report "Illegal instruction: quadrant 2 compressed instruction" severity note;
+                            end if;
+
+                    end case;
 
                 when "11" =>
-                    -- uncompressed instructions
+                    -- uncompressed instructions (quadrant 3)
                     case s_decOpcode is 
 
                         when 7b"1101111" => -- J-Format
