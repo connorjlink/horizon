@@ -33,6 +33,7 @@ entity control_unit is
         o_IPToALU                       : out std_logic;
         o_IsStride4                     : out std_logic;
         o_IsSignExtend                  : out std_logic;
+        o_RS1ToMemoryAddress            : out std_logic;
         o_PendingMemoryOperationsThread : out std_logic_vector(THREAD_COUNT-1 downto 0);
         o_StallThread                   : out std_logic_vector(THREAD_COUNT-1 downto 0);
         o_AtomicSequesterThread         : out std_logic_vector(THREAD_COUNT-1 downto 0);
@@ -91,10 +92,10 @@ procedure SequesterOrAwait(
     constant m_ThreadId                      : in    integer;
     constant m_AqBit                         : in    std_logic;
     constant m_RlBit                         : in    std_logic;
-    constant m_PendingMemoryOperationsThread : in    std_logic_vector(THREAD_COUNT-1 downto 0)
+    constant m_PendingMemoryOperationsThread : in    std_logic_vector(THREAD_COUNT-1 downto 0);
     variable m_AtomicSequesterThread         : inout std_logic_vector(THREAD_COUNT-1 downto 0);
     variable m_StallThread                   : inout std_logic_vector(THREAD_COUNT-1 downto 0);
-    variable m_AqStallPendingThread          : inout std_logic_vector(THREAD_COUNT-1 downto 0);
+    variable m_AqStallPendingThread          : inout std_logic_vector(THREAD_COUNT-1 downto 0)
 ) is
     variable v_Mask : std_logic_vector(THREAD_COUNT-1 downto 0);
 begin
@@ -104,7 +105,7 @@ begin
     -----------------------------------------------------
     -- RELEASE (rl): prior memory ops must complete before AMO
     -----------------------------------------------------
-    if (m_RlBit = '1') and (m_PendingMemoryOperations(m_ThreadId) = '1') then
+    if (m_RlBit = '1') and (m_PendingMemoryOperationsThread(m_ThreadId) = '1') then
         -- Cannot even attempt to take atomic ownership yet
         m_StallThread(m_ThreadId) := '1';
         return;
@@ -235,10 +236,11 @@ begin
         variable v_BranchMode                    : branch_mode_t;
         variable v_Immediate                     : std_logic_vector(31 downto 0);
         variable v_IPToALU                       : std_logic;
+        variable v_RS1ToMemoryAddress            : std_logic;
         variable v_PendingMemoryOperationsThread : std_logic_vector(THREAD_COUNT-1 downto 0);
         variable v_StallThread                   : std_logic_vector(THREAD_COUNT-1 downto 0);
         variable v_AtomicSequesterThread         : std_logic_vector(THREAD_COUNT-1 downto 0);
-        variable v_AqStallPending                : std_logic_vector(THREAD_COUNT-1 downto 0);
+        variable v_AqStallPendingThread                : std_logic_vector(THREAD_COUNT-1 downto 0);
 
     begin 
         if i_Reset = '0' then
@@ -255,10 +257,11 @@ begin
             v_Immediate                     := 32x"0";
             v_BranchMode                    := BRANCHMODE_NONE;
             v_IPToALU                       := '0'; -- 0: no, 1: yes
+            v_RS1ToMemoryAddress            := '0'; -- 0: ALU result, 1: RS1
             v_PendingMemoryOperationsThread := (others => '0');
             v_StallThread                   := (others => '0');
             v_AtomicSequesterThread         := (others => '0');
-            v_AqStallPending                := (others => '0');
+            v_AqStallPendingThread                := (others => '0');
 
             case s_decOpcode is 
                 when 7b"1101111" => -- J-Format
@@ -729,8 +732,10 @@ begin
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "lr.w" severity note;
@@ -744,8 +749,10 @@ begin
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "sc.w" severity note;
@@ -755,12 +762,15 @@ begin
                                 -- amoswap.w - 00001
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amoswap.w" severity note;
@@ -771,12 +781,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := ADD_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amoadd.w" severity note;
@@ -787,12 +800,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := XOR_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amoxor.w" severity note;
@@ -803,12 +819,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := AND_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amoand.w" severity note;
@@ -819,12 +838,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := OR_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amoor.w" severity note;
@@ -835,12 +857,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MIN_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
                                     s_decAq,
                                     s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amomin.w" severity note;
@@ -851,10 +876,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MAX_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amomax.w" severity note;
@@ -865,10 +895,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MINU_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amominu.w" severity note;
@@ -879,10 +914,15 @@ begin
                                 v_MemoryWidth := WORD_TYPE;
                                 v_MemoryWriteEnable := '1';
                                 v_ALUOperator := MAXU_OPERATOR;
+                                v_RS1ToMemoryAddress := '1';
                                 SequesterOrAwait(
                                     s_ThreadId,
+                                    s_decAq,
+                                    s_decRl,
+                                    v_PendingMemoryOperationsThread,
                                     v_AtomicSequesterThread,
-                                    v_StallThread
+                                    v_StallThread,
+                                    v_AqStallPendingThread
                                 );
                                 if ENABLE_DEBUG then
                                     report "amomaxu.w" severity note;
@@ -988,7 +1028,7 @@ begin
             v_PendingMemoryOperationsThread := (others => '0');
             v_StallThread                   := (others => '0');
             v_AtomicSequesterThread         := (others => '0');
-            v_AqStallPending                := (others => '0');
+            v_AqStallPendingThread          := (others => '0');
 
         end if;
 
@@ -1009,7 +1049,7 @@ begin
         o_PendingMemoryOperationsThread <= v_PendingMemoryOperationsThread;
         o_StallThread                   <= v_StallThread;
         o_AtomicSequesterThread         <= v_AtomicSequesterThread;
-        o_AqStallPending                <= v_AqStallPending;
+        o_AqStallPendingThread          <= v_AqStallPendingThread;
 
     end process;
 
