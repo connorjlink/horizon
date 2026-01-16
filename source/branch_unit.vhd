@@ -21,6 +21,7 @@ entity branch_unit is
         -- lookup interface
         i_LookupEnable      : in  std_logic := '0';
         i_LookupIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+        i_LookupInstruction : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
         o_Prediction        : out std_logic;
         o_BTBIsHit          : out std_logic;
         o_PredictedTarget   : out std_logic_vector(DATA_WIDTH-1 downto 0);

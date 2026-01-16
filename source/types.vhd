@@ -242,6 +242,10 @@ function IsUnconditionalBranch(
     constant operator : branch_operator_t
 ) return boolean;
 
+function IsCompressedInstruction(
+    constant instruction : std_logic_vector(31 downto 0)
+) return boolean;
+
 function clog2(
     constant n : natural
 ) return natural;
@@ -298,6 +302,19 @@ function IsUnconditionalBranch(
             return false;
 
     end case;
+
+end function;
+
+function IsCompressedInstruction(
+    constant instruction : std_logic_vector(31 downto 0)
+) return boolean is begin
+
+    -- Compressed instructions have their lowest two bits not equal to "11"
+    if instruction(1 downto 0) /= "11" then
+        return true;
+    else
+        return false;
+    end if;
 
 end function;
 

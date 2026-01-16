@@ -20,51 +20,63 @@ begin
     process(
         i_Instruction
     )
+
+        variable v_IsCompressed : boolean := false;
+
     begin
 
         o_BranchOperator <= BRANCH_NONE;
 
-        -- Opcode bits [6:0]
-        case i_Instruction(6 downto 0) is
+        v_IsCompressed := IsCompressedInstruction(i_Instruction);
 
-            when "1100011" =>
+        if v_IsCompressed then
 
-                -- Func3 bits [14:12]
-                case i_Instruction(14 downto 12) is
 
-                    when "000" =>
-                        o_BranchOperator <= BEQ_TYPE;
+        else
 
-                    when "001" =>
-                        o_BranchOperator <= BNE_TYPE;
+            -- Opcode bits [6:0]
+            case i_Instruction(6 downto 0) is
 
-                    when "100" =>
-                        o_BranchOperator <= BLT_TYPE;
+                when "1100011" =>
 
-                    when "101" =>
-                        o_BranchOperator <= BGE_TYPE;
+                    -- Func3 bits [14:12]
+                    case i_Instruction(14 downto 12) is
 
-                    when "110" =>
-                        o_BranchOperator <= BLTU_TYPE;
+                        when "000" =>
+                            o_BranchOperator <= BEQ_TYPE;
 
-                    when "111" =>
-                        o_BranchOperator <= BGEU_TYPE;
+                        when "001" =>
+                            o_BranchOperator <= BNE_TYPE;
 
-                    when others =>
-                        o_BranchOperator <= BRANCH_NONE;
+                        when "100" =>
+                            o_BranchOperator <= BLT_TYPE;
 
-                end case;
+                        when "101" =>
+                            o_BranchOperator <= BGE_TYPE;
 
-            when "1101111" =>
-                o_BranchOperator <= JAL_TYPE;
+                        when "110" =>
+                            o_BranchOperator <= BLTU_TYPE;
 
-            when "1100111" =>
-                o_BranchOperator <= JALR_TYPE;
+                        when "111" =>
+                            o_BranchOperator <= BGEU_TYPE;
 
-            when others =>
-                o_BranchOperator <= BRANCH_NONE;
+                        when others =>
+                            o_BranchOperator <= BRANCH_NONE;
 
-        end case;
+                    end case;
+
+                when "1101111" =>
+                    o_BranchOperator <= JAL_TYPE;
+
+                when "1100111" =>
+                    o_BranchOperator <= JALR_TYPE;
+
+                when others =>
+                    o_BranchOperator <= BRANCH_NONE;
+
+            end case;
+
+        end if;
 
     end process;
 
