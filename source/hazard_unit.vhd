@@ -95,23 +95,22 @@ begin
         elsif (i_BranchMode = BRANCHMODE_JALR) or
               (i_BranchMode = BRANCHMODE_JAL_OR_BCC and i_IDEX_IsBranch = '1') then
 
-            -- If jalr/jr was already redirected by a correct prediction, avoid the
-            -- legacy forced stall/flush behavior.
+            -- If jalr/jr was already redirected by a correct prediction, no hazard
             if (i_BranchMode = BRANCHMODE_JALR) and (i_PredictedUsed = '1') and (i_IsMispredict = '0') then
                 null;
 
             else
 
-            -- NOTE: if jr, then the link register is x0 which will never cause a hazard
-            if (i_IDEX_RD = i_IFID_RS1 and i_IDEX_RD /= 5x"0") or
-               (i_IDEX_RD = i_IFID_RS2 and i_IDEX_RD /= 5x"0") then 
+                -- NOTE: if jr, then the link register is x0 which will never cause a hazard
+                if (i_IDEX_RD = i_IFID_RS1 and i_IDEX_RD /= 5x"0") or
+                (i_IDEX_RD = i_IFID_RS2 and i_IDEX_RD /= 5x"0") then 
 
-                v_IP_Stall := '1';
-                v_IFID_Stall := '1';
-                v_IDEX_Flush := '1';
-                if IS_DEBUG then
-                    report "HAZARD DETECTED: bcc/jalr" severity note;
-                end if;
+                    v_IP_Stall := '1';
+                    v_IFID_Stall := '1';
+                    v_IDEX_Flush := '1';
+                    if IS_DEBUG then
+                        report "HAZARD DETECTED: bcc/jalr" severity note;
+                    end if;
 
             else
                 -- Detect Bcc conditions taken/not taken

@@ -72,7 +72,7 @@ type btb_lru_t is array (0 to BTB_SETS-1) of std_logic;
 signal s_BTBReplaceWay : btb_lru_t := (others => '0');
 
 
--- PHT should be 256 entries, directly mapped
+-- PHT is 256 entries, directly mapped
 constant PHT_ENTRIES : natural := 256;
 constant PHT_INDEX_BITS : natural := clog2(PHT_ENTRIES);
 constant PHT_INDEX_LSB : natural := BRANCH_LSB;
