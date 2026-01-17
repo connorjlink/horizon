@@ -63,6 +63,7 @@ signal s_decRS2        : std_logic_vector(4 downto 0);
 -- Compressed (C) decoder fields
 signal s_decCOpcode      : std_logic_vector(1 downto 0);
 signal s_decCFunc2       : std_logic_vector(1 downto 0);
+signal s_decCFunc2a      : std_logic_vector(1 downto 0);
 signal s_decCFunc3       : std_logic_vector(2 downto 0);
 signal s_decCFunc4       : std_logic_vector(3 downto 0);
 signal s_decCFunc6       : std_logic_vector(5 downto 0);
@@ -312,6 +313,7 @@ begin
             -- Compressed instruction fields
             o_C_Opcode       => s_decCOpcode,
             o_C_Func2        => s_decCFunc2,
+            o_C_Func2a       => s_decCFunc2a,
             o_C_Func3        => s_decCFunc3,
             o_C_Func4        => s_decCFunc4,
             o_C_Func6        => s_decCFunc6,
@@ -386,7 +388,7 @@ begin
 
                 when "00" =>
                     -- compressed instructions (quadrant 0)
-                    case i_Instruction(15 downto 13) is
+                    case s_decCFunc3 is
 
                         when 3b"000" =>
                             -- c.addi4spn
@@ -399,6 +401,9 @@ begin
                                 v_Immediate := s_extCwImmediate;
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMALU;
+                                if ENABLE_DEBUG then
+                                    report "c.addi4spn" severity note;
+                                end if;
 
                             else
                                 v_Break := '1';
@@ -424,6 +429,9 @@ begin
                             v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
                             v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
                             v_MemoryWidth := WORD_TYPE;
+                            if ENABLE_DEBUG then
+                                report "c.lw" severity note;
+                            end if;
 
                         when 3b"011" =>
                             -- c.flw
@@ -448,7 +456,15 @@ begin
 
                         when 3b"110" =>
                             -- c.sw
-                            null;
+                            v_MemoryWriteEnable := '1';
+                            v_ALUSource := ALUSOURCE_IMMEDIATE;
+                            v_Immediate := s_extClImmediate;
+                            v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            v_RS2 := CompressedRegisterToRegister(s_decCRD_RS2Prime);
+                            v_MemoryWidth := WORD_TYPE;
+                            if ENABLE_DEBUG then
+                                report "c.sw" severity note;
+                            end if;
 
                         when 3b"111" =>
                             -- c.fsw
@@ -467,11 +483,34 @@ begin
 
                 when "01" =>
                     -- compressed instructions (quadrant 1)
-                    case i_Instruction(15 downto 13) is
+                    case s_decCFunc3 is
 
                         when 3b"000" =>
                             -- c.addi / c.nop
-                            null;
+                            if s_decCRD_RS1 /= "00000" and s_decCiImmediate /= 6x"0" then
+                                -- c.addi
+                                v_ALUOperator := ADD_OPERATOR;
+                                v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                v_Immediate := s_extCiImmediate;
+                                v_RD := s_decCRD_RS1;
+                                v_RS1 := s_decCRD_RS1;
+                                v_RegisterFileWriteEnable := '1';
+                                v_RegisterSource := RFSOURCE_FROMALU;
+                                if ENABLE_DEBUG then
+                                    report "c.addi" severity note;
+                                end if;
+
+                            elsif s_decCRD_RS1 = "00000" then
+                                -- c.nop
+                                if ENABLE_DEBUG then
+                                    report "c.nop" severity note;
+                                end if;
+
+                            else
+                                v_Break := '1';
+                                report "c.addi (Illegal Instruction with rd = x0 and immediate != 0)" severity note;
+
+                            end if;
 
                         when 3b"001" =>
                             -- c.jal
@@ -480,8 +519,16 @@ begin
                         when 3b"010" =>
                             -- c.li
                             if s_decCRD_RS1 /= "00000" then
-                                -- TODO:
-                                null;
+                                v_ALUOperator := ADD_OPERATOR;
+                                v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                v_Immediate := s_extCiImmediate;
+                                v_RD := s_decCRD_RS1;
+                                v_RS1 := 5"00000"; -- addi xd, x0, imm
+                                v_RegisterFileWriteEnable := '1';
+                                v_RegisterSource := RFSOURCE_FROMALU;
+                                if ENABLE_DEBUG then
+                                    report "c.li" severity note;
+                                end if;
 
                             else
                                 v_Break := '1';
@@ -499,7 +546,14 @@ begin
 
                                 else
                                     -- c.lui
-                                    null;
+                                    v_Immediate := s_extCuImmediate;
+                                    v_RegisterSource := RFSOURCE_FROMIMMEDIATE;
+                                    v_ALUSource := ALUSOURCE_BIGIMMEDIATE;
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RD := s_decCRD_RS1;
+                                    if ENABLE_DEBUG then
+                                        report "c.lui" severity note;
+                                    end if;
 
                                 end if;
 
@@ -511,39 +565,85 @@ begin
 
                         when 3b"100" =>
                             -- c.srli / c.srai / c.andi / c.sub / c.xor / c.or / c.and
-                            case i_Instruction(11 downto 10) is
+                            case s_decCFunc2a is
 
                                 when 2b"00" =>
                                     -- c.srli
-                                    null;
+                                    v_ALUOperator := SRL_OPERATOR;
+                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                    v_Immediate := s_extCiImmediate;
+                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RegisterSource := RFSOURCE_FROMALU;
+                                    if ENABLE_DEBUG then
+                                        report "c.srli" severity note;
+                                    end if;
 
                                 when 2b"01" =>
                                     -- c.srai
-                                    null;
+                                    v_ALUOperator := SRA_OPERATOR;
+                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                    v_Immediate := s_extCiImmediate;
+                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RegisterSource := RFSOURCE_FROMALU;
+                                    if ENABLE_DEBUG then
+                                        report "c.srai" severity note;
+                                    end if;
 
                                 when 2b"10" =>
                                     -- c.andi
-                                    null;
+                                    v_ALUOperator := AND_OPERATOR;
+                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                    v_Immediate := s_extCiImmediate;
+                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RegisterSource := RFSOURCE_FROMALU;
+                                    if ENABLE_DEBUG then
+                                        report "c.andi" severity note;
+                                    end if;
 
                                 when 2b"11" =>
                                     -- c.sub / c.xor / c.or / c.and
-                                    case i_Instruction(6 downto 5) is
+                                    v_ALUSource := ALUSOURCE_REGISTER;
+                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                    v_RS2 := CompressedRegisterToRegister(s_decCRD_RS2Prime);
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RegisterSource := RFSOURCE_FROMALU;
+
+                                    case s_decCFunc2 is
 
                                         when "00" =>
                                             -- c.sub
-                                            null;
+                                            v_ALUOperator := SUB_OPERATOR;
+                                            if ENABLE_DEBUG then
+                                                report "c.sub" severity note;
+                                            end if;
 
                                         when "01" =>
                                             -- c.xor
-                                            null;
+                                            v_ALUOperator := XOR_OPERATOR;
+                                            if ENABLE_DEBUG then
+                                                report "c.xor" severity note;
+                                            end if;
 
                                         when "10" =>
                                             -- c.or
-                                            null;
+                                            v_ALUOperator := OR_OPERATOR;
+                                            if ENABLE_DEBUG then
+                                                report "c.or" severity note;
+                                            end if;
 
                                         when "11" =>
                                             -- c.and
-                                            null;
+                                            v_ALUOperator := AND_OPERATOR;
+                                            if ENABLE_DEBUG then
+                                                report "c.and" severity note;
+                                            end if;
 
                                         when others =>
                                             v_Break := '1';
@@ -583,11 +683,20 @@ begin
 
                 when "10" =>
                     -- compressed instructions (quadrant 2)
-                    case i_Instruction(15 downto 13) is
+                    case s_decCFunc3 is
 
                         when 3b"000" =>
                             -- c.slli
-                            null;
+                            v_ALUOperator := SLL_OPERATOR;
+                            v_ALUSource := ALUSOURCE_IMMEDIATE;
+                            v_Immediate := s_extCiImmediate;
+                            v_RD := CompressedRegisterToRegister(s_decCRD_RS1Prime);
+                            v_RS1 := CompressedRegisterToRegister(s_decCRD_RS1Prime);
+                            v_RegisterFileWriteEnable := '1';
+                            v_RegisterSource := RFSOURCE_FROMALU;
+                            if ENABLE_DEBUG then
+                                report "c.slli" severity note;
+                            end if;
 
                         when 3b"001" =>
                             -- c.fldsp
@@ -598,7 +707,25 @@ begin
 
                         when 3b"010" =>
                             -- c.lwsp
-                            null;
+                            if s_decCRD_RS1 /= "00000" then
+                                v_RegisterFileWriteEnable := '1';
+                                v_RegisterSource := RFSOURCE_FROMRAM;
+                                v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                v_Immediate := s_extClImmediate;
+                                v_RS1 := 5"00010"; -- stack pointer
+                                v_RD := s_decCRD_RS1;
+                                v_MemoryWidth := WORD_TYPE;
+                                if ENABLE_DEBUG then
+                                    report "c.lwsp" severity note;
+                                end if;
+
+                            else
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "c.lwsp (Illegal Instruction with rd = x0)" severity note;
+                                end if;
+
+                            end if;
 
                         when 3b"011" =>
                             -- c.flwsp

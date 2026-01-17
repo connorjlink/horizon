@@ -31,6 +31,7 @@ entity instruction_decoder is
         -- compressed (C) instruction fields
         o_C_Opcode       : out std_logic_vector(1 downto 0);
         o_C_Func2        : out std_logic_vector(1 downto 0);
+        o_C_Func2a       : out std_logic_vector(1 downto 0);
         o_C_Func3        : out std_logic_vector(2 downto 0);
         o_C_Func4        : out std_logic_vector(3 downto 0);
         o_C_Func6        : out std_logic_vector(5 downto 0);
@@ -99,11 +100,11 @@ begin
 
     o_C_Opcode <= i_Instruction(1 downto 0);
 
-    o_C_Func2 <= i_Instruction(6 downto 5);
-
-    o_C_Func3 <= i_Instruction(15 downto 13);
-    o_C_Func4 <= i_Instruction(15 downto 12);
-    o_C_Func6 <= i_Instruction(15 downto 10);
+    o_C_Func2a <= i_Instruction(11 downto 10);
+    o_C_Func2  <= i_Instruction(6 downto 5);
+    o_C_Func3  <= i_Instruction(15 downto 13);
+    o_C_Func4  <= i_Instruction(15 downto 12);
+    o_C_Func6  <= i_Instruction(15 downto 10);
 
     o_C_RD_RS1 <= i_Instruction(11 downto 7);
     o_C_RS2    <= i_Instruction(6 downto 2);
