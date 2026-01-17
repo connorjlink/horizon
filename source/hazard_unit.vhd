@@ -34,6 +34,10 @@ entity hazard_unit is
 
         i_BranchMode     : in  branch_mode_t;
         i_BranchTaken    : in  std_logic;
+
+        -- Branch prediction (for avoiding unnecessary flushes on correct predictions)
+        i_PredictedUsed  : in  std_logic := '0';
+        i_IsMispredict   : in  std_logic := '0';
         
         i_IDEX_IsBranch  : in  std_logic;
         i_MEMWB_IsBranch : in  std_logic;
@@ -75,12 +79,13 @@ begin
         v_EXMEM_Stall := '0';
 
 
-        -- Detect jal/j, which doesn't rely on any external data to execute, but will need to clear the pipeline until the remaining instructions are committed
+        -- Detect jal/j, which doesn't rely on any external data to execute.
+        -- If the fetch unit already redirected via a correct prediction, avoid inserting bubbles.
         if i_BranchMode = BRANCHMODE_JAL_OR_BCC and i_IDEX_IsBranch = '0' then
-            -- No extra dependencies, so branch is computed taken, no stall to allow IP to update
-            --v_IP_Stall := '1';
-            v_IFID_Flush := '1';
-            v_IDEX_Flush := '1';
+            if (i_PredictedUsed = '0') or (i_IsMispredict = '1') then
+                v_IFID_Flush := '1';
+                v_IDEX_Flush := '1';
+            end if;
             if IS_DEBUG then
                 report "NON-HAZARD BRANCH DETECTED: jal" severity note;
             end if;
@@ -105,9 +110,11 @@ begin
                 -- Detect Bcc conditions taken/not taken
                 if i_IDEX_IsBranch = '1' then 
                     if i_BranchTaken = '1' then
-                        -- No extra dependencies, so branch is computed taken, no stall to allow IP to update
-                        v_IFID_Flush := '1';
-                        v_IDEX_Flush := '1';
+                        -- If the fetch unit already redirected via a correct prediction, avoid bubbles.
+                        if (i_PredictedUsed = '0') or (i_IsMispredict = '1') then
+                            v_IFID_Flush := '1';
+                            v_IDEX_Flush := '1';
+                        end if;
                         if IS_DEBUG then
                             report "BRANCH TAKEN: bcc" severity note;
                         end if;

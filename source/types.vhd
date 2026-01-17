@@ -105,6 +105,11 @@ type IF_record_t is record
     InstructionAddress : std_logic_vector(31 downto 0);
     LinkAddress        : std_logic_vector(31 downto 0);
     Instruction        : std_logic_vector(31 downto 0);
+    IsPredictionUsed   : std_logic;
+    IsPredictionTaken  : std_logic;
+    IsBTBHit           : std_logic;
+    PredictedTarget    : std_logic_vector(31 downto 0);
+    PredictedOperator  : branch_operator_t;
     ThreadId           : std_logic;
 end record IF_record_t;
 
@@ -112,6 +117,11 @@ constant IF_NOP : IF_record_t := (
     InstructionAddress => (others => '0'),
     LinkAddress        => (others => '0'),
     Instruction        => 32x"00000013",
+    IsPredictionUsed   => '0',
+    IsPredictionTaken  => '0',
+    IsBTBHit           => '0',
+    PredictedTarget    => (others => '0'),
+    PredictedOperator  => BRANCH_NONE,
     ThreadId           => '0'
 );
 
@@ -125,49 +135,49 @@ constant IF_NOP : IF_record_t := (
 -- NOTE: Control unit is the first cause of exceptions: illegal instructions.
 
 type ID_record_t is record
-    MemoryWriteEnable   : std_logic;
+    MemoryWriteEnable       : std_logic;
     RegisterFileWriteEnable : std_logic;
-    RegisterSource      : rf_source_t;
-    ALUSource           : alu_source_t;
-    ALUOperator         : alu_operator_t;
-    BranchOperator      : branch_operator_t;
-    MemoryWidth         : data_width_t;
-    BranchMode          : branch_mode_t;
-    RD                  : std_logic_vector(4 downto 0);
-    RS1                 : std_logic_vector(4 downto 0);
-    RS2                 : std_logic_vector(4 downto 0);
-    DS1                 : std_logic_vector(31 downto 0);
-    DS2                 : std_logic_vector(31 downto 0);
-    Immediate           : std_logic_vector(31 downto 0);
-    Break           : std_logic;
-    IsBranch            : std_logic;
-    IsStride4           : std_logic; -- 0: 2 bytes, 1: 4 bytes
-    IsSignExtend        : std_logic; -- 0: zero-extend, 1: sign-extend
-    IPToALU             : std_logic;
-    Data                : std_logic_vector(31 downto 0);
+    RegisterSource          : rf_source_t;
+    ALUSource               : alu_source_t;
+    ALUOperator             : alu_operator_t;
+    BranchOperator          : branch_operator_t;
+    MemoryWidth             : data_width_t;
+    BranchMode              : branch_mode_t;
+    RD                      : std_logic_vector(4 downto 0);
+    RS1                     : std_logic_vector(4 downto 0);
+    RS2                     : std_logic_vector(4 downto 0);
+    DS1                     : std_logic_vector(31 downto 0);
+    DS2                     : std_logic_vector(31 downto 0);
+    Immediate               : std_logic_vector(31 downto 0);
+    Break                   : std_logic;
+    IsBranch                : std_logic;
+    IsStride4               : std_logic; -- 0: 2 bytes, 1: 4 bytes
+    IsSignExtend            : std_logic; -- 0: zero-extend, 1: sign-extend
+    IPToALU                 : std_logic;
+    Data                    : std_logic_vector(31 downto 0);
 end record ID_record_t;
 
 constant ID_NOP : ID_record_t := (
-    MemoryWriteEnable   => '0',
+    MemoryWriteEnable       => '0',
     RegisterFileWriteEnable => '0',
-    RegisterSource      => RFSOURCE_FROMALU,
-    ALUSource           => ALUSOURCE_IMMEDIATE,
-    ALUOperator         => ADD_OPERATOR,
-    MemoryWidth         => NONE_TYPE,
-    BranchOperator      => BRANCH_NONE,
-    BranchMode          => BRANCHMODE_NONE,
-    RD                  => (others => '0'),
-    RS1                 => (others => '0'),
-    RS2                 => (others => '0'),
-    DS1                 => (others => '0'),
-    DS2                 => (others => '0'),
-    Immediate           => (others => '0'),
-    Break           => '0',
-    IsBranch            => '0',
-    IsStride4           => '0',
-    IsSignExtend        => '0',
-    IPToALU             => '0',
-    Data                => (others => '0')
+    RegisterSource          => RFSOURCE_FROMALU,
+    ALUSource               => ALUSOURCE_IMMEDIATE,
+    ALUOperator             => ADD_OPERATOR,
+    MemoryWidth             => NONE_TYPE,
+    BranchOperator          => BRANCH_NONE,
+    BranchMode              => BRANCHMODE_NONE,
+    RD                      => (others => '0'),
+    RS1                     => (others => '0'),
+    RS2                     => (others => '0'),
+    DS1                     => (others => '0'),
+    DS2                     => (others => '0'),
+    Immediate               => (others => '0'),
+    Break                   => '0',
+    IsBranch                => '0',
+    IsStride4               => '0',
+    IsSignExtend            => '0',
+    IPToALU                 => '0',
+    Data                    => (others => '0')
 );
 
 ------------------------------------------------------

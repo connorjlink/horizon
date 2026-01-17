@@ -1,0 +1,23 @@
+[inst #1] ori x1,x0,291
+Register Write to Reg: 0x01 Val: 0x00000123
+[inst #2] jal x0,8
+Register Write to Reg: 0x00 Val: 0x00400008
+[inst #3] ori x2,x0,291
+Register Write to Reg: 0x02 Val: 0x00000123
+[inst #4] beq x1,x2,8
+[inst #5] jal x1,24
+Register Write to Reg: 0x01 Val: 0x0040001C
+[inst #6] ori x3,x0,291
+Register Write to Reg: 0x03 Val: 0x00000123
+[inst #7] jalr x0,x1,0
+Register Write to Reg: 0x00 Val: 0x00400038
+[inst #8] ori x4,x0,291
+Register Write to Reg: 0x04 Val: 0x00000123
+[inst #9] beq x1,x0,24
+[inst #10] ori x5,x0,291
+Register Write to Reg: 0x05 Val: 0x00000123
+[inst #11] jal x0,16
+Register Write to Reg: 0x00 Val: 0x0040002C
+[inst #12] ebreak 
+
+Program terminated by dropping off the bottom.

@@ -60,11 +60,27 @@ signal s_BranchTaken    : std_logic;
 signal s_BranchNotTaken : std_logic;
 signal s_BranchLoad     : std_logic := '0';
 
+-- Branch predictor (BTB/PHT) interface signals
+signal s_BranchUnit_Prediction        : std_logic := '0';
+signal s_BranchUnit_BTBIsHit          : std_logic := '0';
+signal s_BranchUnit_PredictedTarget   : std_logic_vector(31 downto 0) := (others => '0');
+signal s_BranchUnit_PredictedOperator : branch_operator_t := BRANCH_NONE;
+signal s_BranchUnit_IsPredictionUsed  : std_logic := '0';
+signal s_BranchUnit_Mispredict        : std_logic := '0';
+signal s_BranchUnit_RedirectEnable    : std_logic := '0';
+signal s_BranchUnit_RedirectAddress   : std_logic_vector(31 downto 0) := (others => '0');
+signal s_IPLoad                       : std_logic := '0';
+signal s_IPLoadAddress                : std_logic_vector(31 downto 0) := (others => '0');
+
+signal s_IFID_Flush_Final : std_logic := '0';
+signal s_IDEX_Flush_Final : std_logic := '0';
+
 -- Signal to hold the modified clock
 signal n_Clock  : std_logic;
 
 -- Signals to hold the computed memory instruction address input to the IP
-signal s_BranchAddress : std_logic_vector(31 downto 0);
+signal s_BranchAddress           : std_logic_vector(31 downto 0);
+signal s_BranchUnit_UpdateEnable : std_logic;
 
 -- Signal to output the contents of the instruction pointer
 signal s_IPAddress : std_logic_vector(31 downto 0);
@@ -232,7 +248,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IFID_Stall or s_ALUBusy,
-            i_Flush   => s_IFID_Flush and (not s_ALUBusy),
+            i_Flush   => s_IFID_Flush_Final and (not s_ALUBusy),
             i_Signals => IFID_IF_raw,
             o_Signals => IFID_IF_buf
         );
@@ -251,7 +267,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IDEX_Stall or s_ALUBusy,
-            i_Flush   => s_IDEX_Flush and (not s_ALUBusy),
+            i_Flush   => s_IDEX_Flush_Final and (not s_ALUBusy),
             i_Signals => IDEX_IF_raw,
             o_Signals => IDEX_IF_buf
         );
@@ -261,7 +277,7 @@ begin
             i_Clock   => i_Clock,
             i_Reset   => i_Reset,
             i_Stall   => s_IDEX_Stall or s_ALUBusy,
-            i_Flush   => s_IDEX_Flush and (not s_ALUBusy),
+            i_Flush   => s_IDEX_Flush_Final and (not s_ALUBusy),
             i_Signals => IDEX_ID_raw,
             o_Signals => IDEX_ID_buf
         );
@@ -397,6 +413,27 @@ begin
         '1' when (IDEX_ID_buf.BranchMode = BRANCHMODE_JAL_OR_BCC and IDEX_ID_buf.IsBranch = '0') else
         (s_BranchTaken and IDEX_ID_buf.IsBranch);
 
+    -- used only if taken and hit in BTB
+    s_BranchUnit_IsPredictionUsed <= s_BranchUnit_Prediction and s_BranchUnit_BTBIsHit;
+
+    -- detect potential mispredictions at the IDEX stage
+    s_BranchUnit_Mispredict <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (
+                            (IDEX_IF_buf.IsPredictionUsed = '1' and (s_BranchLoad = '0')) or
+                            (IDEX_IF_buf.IsPredictionUsed = '0' and (s_BranchLoad = '1')) or
+                            (IDEX_IF_buf.IsPredictionUsed = '1' and (s_BranchLoad = '1') and (IDEX_IF_buf.PredictedTarget /= s_BranchAddress))
+                        ) else '0';
+
+    -- resolve correct mispredicted IP or fall-through
+    s_BranchUnit_RedirectEnable  <= s_BranchUnit_Mispredict and (not s_IPBreak) and (not s_ALUBusy);
+    s_BranchUnit_RedirectAddress <= s_BranchAddress when s_BranchLoad = '1' else IDEX_IF_buf.LinkAddress;
+
+    s_IPLoad        <= s_BranchUnit_RedirectEnable or (s_BranchUnit_IsPredictionUsed and (not s_IPBreak) and (not s_ALUBusy) and (not i_InstructionLoad) and (not i_Reset));
+    s_IPLoadAddress <= s_BranchUnit_RedirectAddress when s_BranchUnit_RedirectEnable = '1' else s_BranchUnit_PredictedTarget;
+
+    -- flush in-flight mispredicted instructions
+    s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable;
+    s_IDEX_Flush_Final <= s_IDEX_Flush or s_BranchUnit_RedirectEnable;
+
     e_InstructionPointer: entity work.instruction_pointer
         generic map(
             ResetAddress => 32x"00400000"
@@ -404,9 +441,9 @@ begin
         port map(
             i_Clock       => i_Clock,
             i_Reset       => i_Reset,
-            i_Stall       => s_IPBreak or s_BranchLoad or s_ALUBusy,
-            i_Load        => s_BranchLoad,
-            i_LoadAddress => s_BranchAddress,
+            i_Stall       => s_IPBreak or s_ALUBusy,
+            i_Load        => s_IPLoad,
+            i_LoadAddress => s_IPLoadAddress,
             i_Stride      => '1', -- IDEX_ID_buf.IsStride4, -- NOTE: This might be 1 pipeline stage too late to increment the correct corresponding amount. But, resolving this requires instruction pre-decoding to compute length, so just assume 4-byte instructions for now
             o_Address     => s_IPAddress,
             o_LinkAddress => s_NextInstructionAddress
@@ -415,6 +452,11 @@ begin
     IFID_IF_raw.InstructionAddress <= s_IPAddress;
     IFID_IF_raw.LinkAddress        <= s_NextInstructionAddress;
     IFID_IF_raw.Instruction        <= s_Instruction;
+    IFID_IF_raw.IsPredictionUsed   <= s_BranchUnit_IsPredictionUsed;
+    IFID_IF_raw.IsPredictionTaken          <= s_BranchUnit_Prediction;
+    IFID_IF_raw.IsBTBHit         <= s_BranchUnit_BTBIsHit;
+    IFID_IF_raw.PredictedTarget    <= s_BranchUnit_PredictedTarget;
+    IFID_IF_raw.PredictedOperator  <= s_BranchUnit_PredictedOperator;
 
     -----------------------------------------------------
 
@@ -437,6 +479,9 @@ begin
             MEMWB_MEM_buf.Data  when FORWARDING_FROMMEM,
             IDEX_ID_buf.DS2     when others;
 
+    s_BranchUnit_UpdateEnable <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (s_ALUBusy = '0') and (s_IDEX_Stall = '0') else 
+                                '0';
+
     e_BranchUnit: entity work.branch_unit
         port map(
             i_Clock          => i_Clock,
@@ -446,18 +491,21 @@ begin
             o_BranchTaken    => s_BranchTaken,
             o_BranchNotTaken => s_BranchNotTaken,
 
-            -- TODO: wire remaining branch predictor ports
-            i_LookupEnable      => '0',
-            i_LookupIP          => (others => '0'),
-            o_Prediction        => open,
-            o_BTBIsHit          => open,
-            o_PredictedTarget   => open,
-            o_PredictedOperator => open,
-            i_UpdateEnable      => '0',
-            i_UpdateIP          => (others => '0'),
-            i_UpdateTarget      => (others => '0'),
-            i_UpdateTaken       => '0',
-            i_UpdateOperator    => BRANCH_NONE
+            -- Predictor lookup (IF stage)
+            i_LookupEnable      => (not i_Reset) and (not i_InstructionLoad),
+            i_LookupIP          => s_IPAddress,
+            i_LookupInstruction => s_Instruction,
+            o_Prediction        => s_BranchUnit_Prediction,
+            o_BTBIsHit          => s_BranchUnit_BTBIsHit,
+            o_PredictedTarget   => s_BranchUnit_PredictedTarget,
+            o_PredictedOperator => s_BranchUnit_PredictedOperator,
+
+            -- Predictor update (branch resolution in IDEX stage)
+            i_UpdateEnable      => s_BranchUnit_UpdateEnable,
+            i_UpdateIP          => IDEX_IF_buf.InstructionAddress,
+            i_UpdateTarget      => s_BranchAddress,
+            i_UpdateTaken       => s_BranchLoad,
+            i_UpdateOperator    => IDEX_ID_buf.BranchOperator
         );
 
     -----------------------------------------------------
@@ -661,6 +709,9 @@ begin
 
             i_BranchMode     => IDEX_ID_buf.BranchMode,
             i_BranchTaken    => s_BranchTaken,
+
+            i_PredictedUsed  => IDEX_IF_buf.IsPredictionUsed,
+            i_IsMispredict   => s_BranchUnit_Mispredict,
 
             i_IDEX_IsBranch  => IDEX_ID_buf.IsBranch,
             i_MEMWB_IsBranch => MEMWB_ID_buf.IsBranch,

@@ -2,18 +2,89 @@
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
-../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@15ns:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@15ns:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+./source/control_unit.vhd:863:41:@240ns:(report note): addi
+./source/control_unit.vhd:863:41:@260ns:(report note): addi
+./source/control_unit.vhd:863:41:@260ns:(report note): addi
+./source/control_unit.vhd:863:41:@260ns:(report note): addi
+./source/control_unit.vhd:863:41:@260ns:(report note): addi
+./source/control_unit.vhd:863:41:@280ns:(report note): addi
+./source/control_unit.vhd:863:41:@280ns:(report note): addi
+./source/control_unit.vhd:863:41:@280ns:(report note): addi
+./source/control_unit.vhd:863:41:@280ns:(report note): addi
+./source/control_unit.vhd:863:41:@300ns:(report note): addi
+./source/control_unit.vhd:863:41:@300ns:(report note): addi
+./source/control_unit.vhd:863:41:@300ns:(report note): addi
+./source/control_unit.vhd:863:41:@300ns:(report note): addi
+./source/control_unit.vhd:863:41:@320ns:(report note): addi
+./source/control_unit.vhd:863:41:@320ns:(report note): addi
+./source/control_unit.vhd:863:41:@320ns:(report note): addi
+./source/control_unit.vhd:863:41:@320ns:(report note): addi
+./source/control_unit.vhd:863:41:@340ns:(report note): addi
+./source/control_unit.vhd:863:41:@340ns:(report note): addi
+./source/control_unit.vhd:863:41:@340ns:(report note): addi
+./source/control_unit.vhd:863:41:@340ns:(report note): addi
+./source/control_unit.vhd:863:41:@360ns:(report note): addi
+./source/control_unit.vhd:863:41:@360ns:(report note): addi
+./source/control_unit.vhd:863:41:@360ns:(report note): addi
+./source/control_unit.vhd:863:41:@360ns:(report note): addi
+./source/control_unit.vhd:863:41:@380ns:(report note): addi
+./source/control_unit.vhd:863:41:@380ns:(report note): addi
+./source/control_unit.vhd:863:41:@380ns:(report note): addi
+./source/control_unit.vhd:863:41:@380ns:(report note): addi
+./source/control_unit.vhd:863:41:@400ns:(report note): addi
+./source/control_unit.vhd:863:41:@400ns:(report note): addi
+./source/control_unit.vhd:863:41:@400ns:(report note): addi
+./source/control_unit.vhd:863:41:@400ns:(report note): addi
+./source/control_unit.vhd:863:41:@420ns:(report note): addi
+./source/control_unit.vhd:863:41:@420ns:(report note): addi
+./source/control_unit.vhd:863:41:@420ns:(report note): addi
+./source/control_unit.vhd:863:41:@420ns:(report note): addi
+./source/control_unit.vhd:863:41:@440ns:(report note): addi
+./source/control_unit.vhd:863:41:@440ns:(report note): addi
+./source/control_unit.vhd:863:41:@440ns:(report note): addi
+./source/control_unit.vhd:863:41:@440ns:(report note): addi
+./source/control_unit.vhd:863:41:@460ns:(report note): addi
+./source/control_unit.vhd:1557:37:@460ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@460ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@460ns:(report note): ebreak
+./source/control_unit.vhd:1562:37:@480ns:(report note): ecall
+./source/control_unit.vhd:1577:25:@480ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1577:25:@480ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@480ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@480ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@480ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@490ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@490ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@510ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0

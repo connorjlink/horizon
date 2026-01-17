@@ -2,20 +2,266 @@
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@0ms:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:1347:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
-../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3320ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3320ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3330ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3330ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3350ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@3350ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-simulation finished @3380ns
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:1168:7:@15ns:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1195:7:@15ns:(assertion warning): NUMERIC_STD.">": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+./source/control_unit.vhd:863:41:@1360ns:(report note): addi
+./source/control_unit.vhd:863:41:@1380ns:(report note): addi
+./source/control_unit.vhd:1514:33:@1380ns:(report note): lui
+./source/control_unit.vhd:1514:33:@1380ns:(report note): lui
+./source/control_unit.vhd:1514:33:@1380ns:(report note): lui
+./source/control_unit.vhd:1514:33:@1400ns:(report note): lui
+./source/control_unit.vhd:863:41:@1400ns:(report note): addi
+./source/control_unit.vhd:863:41:@1400ns:(report note): addi
+./source/control_unit.vhd:863:41:@1400ns:(report note): addi
+./source/control_unit.vhd:863:41:@1420ns:(report note): addi
+./source/control_unit.vhd:863:41:@1420ns:(report note): addi
+./source/control_unit.vhd:863:41:@1420ns:(report note): addi
+./source/control_unit.vhd:863:41:@1420ns:(report note): addi
+./source/control_unit.vhd:863:41:@1440ns:(report note): addi
+./source/control_unit.vhd:836:33:@1440ns:(report note): jal
+./source/control_unit.vhd:836:33:@1440ns:(report note): jal
+./source/control_unit.vhd:836:33:@1440ns:(report note): jal
+./source/control_unit.vhd:836:33:@1460ns:(report note): jal
+./source/control_unit.vhd:836:33:@1460ns:(report note): jal
+./source/control_unit.vhd:836:33:@1460ns:(report note): jal
+./source/control_unit.vhd:836:33:@1460ns:(report note): jal
+./source/control_unit.vhd:836:33:@1480ns:(report note): jal
+./source/control_unit.vhd:863:41:@1480ns:(report note): addi
+./source/control_unit.vhd:863:41:@1480ns:(report note): addi
+./source/control_unit.vhd:863:41:@1480ns:(report note): addi
+./source/control_unit.vhd:863:41:@1500ns:(report note): addi
+./source/control_unit.vhd:863:41:@1500ns:(report note): addi
+./source/control_unit.vhd:863:41:@1500ns:(report note): addi
+./source/control_unit.vhd:863:41:@1500ns:(report note): addi
+./source/control_unit.vhd:863:41:@1520ns:(report note): addi
+./source/control_unit.vhd:1039:41:@1520ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1520ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1520ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1580ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1580ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1580ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1580ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1600ns:(report note): sw
+./source/control_unit.vhd:863:41:@1600ns:(report note): addi
+./source/control_unit.vhd:863:41:@1600ns:(report note): addi
+./source/control_unit.vhd:863:41:@1600ns:(report note): addi
+./source/control_unit.vhd:863:41:@1620ns:(report note): addi
+./source/control_unit.vhd:863:41:@1620ns:(report note): addi
+./source/control_unit.vhd:863:41:@1620ns:(report note): addi
+./source/control_unit.vhd:863:41:@1620ns:(report note): addi
+./source/control_unit.vhd:863:41:@1640ns:(report note): addi
+./source/control_unit.vhd:836:33:@1640ns:(report note): jal
+./source/control_unit.vhd:836:33:@1640ns:(report note): jal
+./source/control_unit.vhd:836:33:@1640ns:(report note): jal
+./source/control_unit.vhd:836:33:@1660ns:(report note): jal
+./source/control_unit.vhd:1241:41:@1660ns:(report note): bne
+./source/control_unit.vhd:1241:41:@1660ns:(report note): bne
+./source/control_unit.vhd:1241:41:@1660ns:(report note): bne
+./source/control_unit.vhd:1241:41:@1680ns:(report note): bne
+./source/control_unit.vhd:863:41:@1680ns:(report note): addi
+./source/control_unit.vhd:863:41:@1680ns:(report note): addi
+./source/control_unit.vhd:863:41:@1680ns:(report note): addi
+./source/control_unit.vhd:863:41:@1700ns:(report note): addi
+./source/control_unit.vhd:863:41:@1700ns:(report note): addi
+./source/control_unit.vhd:863:41:@1700ns:(report note): addi
+./source/control_unit.vhd:863:41:@1700ns:(report note): addi
+./source/control_unit.vhd:863:41:@1720ns:(report note): addi
+./source/control_unit.vhd:1039:41:@1720ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1720ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1720ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1780ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1780ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1780ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1780ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1800ns:(report note): sw
+./source/control_unit.vhd:863:41:@1800ns:(report note): addi
+./source/control_unit.vhd:863:41:@1800ns:(report note): addi
+./source/control_unit.vhd:863:41:@1800ns:(report note): addi
+./source/control_unit.vhd:863:41:@1820ns:(report note): addi
+./source/control_unit.vhd:863:41:@1820ns:(report note): addi
+./source/control_unit.vhd:863:41:@1820ns:(report note): addi
+./source/control_unit.vhd:863:41:@1820ns:(report note): addi
+./source/control_unit.vhd:863:41:@1840ns:(report note): addi
+./source/control_unit.vhd:836:33:@1840ns:(report note): jal
+./source/control_unit.vhd:836:33:@1840ns:(report note): jal
+./source/control_unit.vhd:836:33:@1840ns:(report note): jal
+./source/control_unit.vhd:836:33:@1860ns:(report note): jal
+./source/control_unit.vhd:878:41:@1860ns:(report note): slti
+./source/control_unit.vhd:878:41:@1860ns:(report note): slti
+./source/control_unit.vhd:878:41:@1860ns:(report note): slti
+./source/control_unit.vhd:878:41:@1880ns:(report note): slti
+./source/control_unit.vhd:863:41:@1880ns:(report note): addi
+./source/control_unit.vhd:863:41:@1880ns:(report note): addi
+./source/control_unit.vhd:863:41:@1880ns:(report note): addi
+./source/control_unit.vhd:863:41:@1900ns:(report note): addi
+./source/control_unit.vhd:863:41:@1900ns:(report note): addi
+./source/control_unit.vhd:863:41:@1900ns:(report note): addi
+./source/control_unit.vhd:863:41:@1900ns:(report note): addi
+./source/control_unit.vhd:863:41:@1920ns:(report note): addi
+./source/control_unit.vhd:1039:41:@1920ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1920ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1920ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1980ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1980ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1980ns:(report note): sw
+./source/control_unit.vhd:1039:41:@1980ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2us:(report note): sw
+./source/control_unit.vhd:863:41:@2us:(report note): addi
+./source/control_unit.vhd:863:41:@2us:(report note): addi
+./source/control_unit.vhd:863:41:@2us:(report note): addi
+./source/control_unit.vhd:863:41:@2020ns:(report note): addi
+./source/control_unit.vhd:863:41:@2020ns:(report note): addi
+./source/control_unit.vhd:863:41:@2020ns:(report note): addi
+./source/control_unit.vhd:863:41:@2020ns:(report note): addi
+./source/control_unit.vhd:863:41:@2040ns:(report note): addi
+./source/control_unit.vhd:836:33:@2040ns:(report note): jal
+./source/control_unit.vhd:836:33:@2040ns:(report note): jal
+./source/control_unit.vhd:836:33:@2040ns:(report note): jal
+./source/control_unit.vhd:836:33:@2060ns:(report note): jal
+./source/control_unit.vhd:871:41:@2060ns:(report note): slli
+./source/control_unit.vhd:871:41:@2060ns:(report note): slli
+./source/control_unit.vhd:871:41:@2060ns:(report note): slli
+./source/control_unit.vhd:871:41:@2080ns:(report note): slli
+./source/control_unit.vhd:863:41:@2080ns:(report note): addi
+./source/control_unit.vhd:863:41:@2080ns:(report note): addi
+./source/control_unit.vhd:863:41:@2080ns:(report note): addi
+./source/control_unit.vhd:863:41:@2100ns:(report note): addi
+./source/control_unit.vhd:863:41:@2100ns:(report note): addi
+./source/control_unit.vhd:863:41:@2100ns:(report note): addi
+./source/control_unit.vhd:863:41:@2100ns:(report note): addi
+./source/control_unit.vhd:863:41:@2120ns:(report note): addi
+./source/control_unit.vhd:1039:41:@2120ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2120ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2120ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2180ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2180ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2180ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2180ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2200ns:(report note): sw
+./source/control_unit.vhd:863:41:@2200ns:(report note): addi
+./source/control_unit.vhd:863:41:@2200ns:(report note): addi
+./source/control_unit.vhd:863:41:@2200ns:(report note): addi
+./source/control_unit.vhd:863:41:@2220ns:(report note): addi
+./source/control_unit.vhd:863:41:@2220ns:(report note): addi
+./source/control_unit.vhd:863:41:@2220ns:(report note): addi
+./source/control_unit.vhd:863:41:@2220ns:(report note): addi
+./source/control_unit.vhd:863:41:@2240ns:(report note): addi
+./source/control_unit.vhd:836:33:@2240ns:(report note): jal
+./source/control_unit.vhd:836:33:@2240ns:(report note): jal
+./source/control_unit.vhd:836:33:@2240ns:(report note): jal
+./source/control_unit.vhd:836:33:@2260ns:(report note): jal
+./source/control_unit.vhd:863:41:@2260ns:(report note): addi
+./source/control_unit.vhd:863:41:@2260ns:(report note): addi
+./source/control_unit.vhd:863:41:@2260ns:(report note): addi
+./source/control_unit.vhd:863:41:@2280ns:(report note): addi
+./source/control_unit.vhd:863:41:@2280ns:(report note): addi
+./source/control_unit.vhd:863:41:@2280ns:(report note): addi
+./source/control_unit.vhd:863:41:@2280ns:(report note): addi
+./source/control_unit.vhd:863:41:@2300ns:(report note): addi
+./source/control_unit.vhd:863:41:@2300ns:(report note): addi
+./source/control_unit.vhd:863:41:@2300ns:(report note): addi
+./source/control_unit.vhd:863:41:@2300ns:(report note): addi
+./source/control_unit.vhd:863:41:@2320ns:(report note): addi
+./source/control_unit.vhd:1039:41:@2320ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2320ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2320ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2380ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2380ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2380ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2380ns:(report note): sw
+./source/control_unit.vhd:1039:41:@2400ns:(report note): sw
+./source/control_unit.vhd:863:41:@2400ns:(report note): addi
+./source/control_unit.vhd:863:41:@2400ns:(report note): addi
+./source/control_unit.vhd:863:41:@2400ns:(report note): addi
+./source/control_unit.vhd:863:41:@2420ns:(report note): addi
+./source/control_unit.vhd:863:41:@2420ns:(report note): addi
+./source/control_unit.vhd:863:41:@2420ns:(report note): addi
+./source/control_unit.vhd:863:41:@2420ns:(report note): addi
+./source/control_unit.vhd:863:41:@2440ns:(report note): addi
+./source/control_unit.vhd:863:41:@2440ns:(report note): addi
+./source/control_unit.vhd:863:41:@2440ns:(report note): addi
+./source/control_unit.vhd:863:41:@2440ns:(report note): addi
+./source/control_unit.vhd:863:41:@2460ns:(report note): addi
+./source/control_unit.vhd:863:41:@2460ns:(report note): addi
+./source/control_unit.vhd:863:41:@2460ns:(report note): addi
+./source/control_unit.vhd:863:41:@2460ns:(report note): addi
+./source/control_unit.vhd:863:41:@2480ns:(report note): addi
+./source/control_unit.vhd:1145:49:@2480ns:(report note): add
+./source/control_unit.vhd:1145:49:@2480ns:(report note): add
+./source/control_unit.vhd:1145:49:@2480ns:(report note): add
+./source/control_unit.vhd:1145:49:@2500ns:(report note): add
+./source/control_unit.vhd:964:41:@2500ns:(report note): lw
+./source/control_unit.vhd:964:41:@2500ns:(report note): lw
+./source/control_unit.vhd:964:41:@2500ns:(report note): lw
+./source/control_unit.vhd:964:41:@2520ns:(report note): lw
+./source/control_unit.vhd:964:41:@2520ns:(report note): lw
+./source/control_unit.vhd:964:41:@2520ns:(report note): lw
+./source/control_unit.vhd:964:41:@2520ns:(report note): lw
+./source/control_unit.vhd:964:41:@2540ns:(report note): lw
+./source/control_unit.vhd:863:41:@2540ns:(report note): addi
+./source/control_unit.vhd:863:41:@2540ns:(report note): addi
+./source/control_unit.vhd:863:41:@2540ns:(report note): addi
+./source/control_unit.vhd:863:41:@2560ns:(report note): addi
+./source/control_unit.vhd:849:33:@2560ns:(report note): jalr
+./source/control_unit.vhd:849:33:@2560ns:(report note): jalr
+./source/control_unit.vhd:849:33:@2560ns:(report note): jalr
+./source/control_unit.vhd:849:33:@2580ns:(report note): jalr
+./source/control_unit.vhd:863:41:@2580ns:(report note): addi
+./source/control_unit.vhd:863:41:@2580ns:(report note): addi
+./source/control_unit.vhd:863:41:@2580ns:(report note): addi
+./source/control_unit.vhd:863:41:@2600ns:(report note): addi
+./source/control_unit.vhd:863:41:@2600ns:(report note): addi
+./source/control_unit.vhd:863:41:@2600ns:(report note): addi
+./source/control_unit.vhd:863:41:@2600ns:(report note): addi
+./source/control_unit.vhd:863:41:@2620ns:(report note): addi
+./source/control_unit.vhd:836:33:@2620ns:(report note): jal
+./source/control_unit.vhd:836:33:@2620ns:(report note): jal
+./source/control_unit.vhd:836:33:@2620ns:(report note): jal
+./source/control_unit.vhd:836:33:@2640ns:(report note): jal
+./source/control_unit.vhd:863:41:@2640ns:(report note): addi
+./source/control_unit.vhd:863:41:@2640ns:(report note): addi
+./source/control_unit.vhd:863:41:@2640ns:(report note): addi
+./source/control_unit.vhd:863:41:@2660ns:(report note): addi
+./source/control_unit.vhd:863:41:@2660ns:(report note): addi
+./source/control_unit.vhd:863:41:@2660ns:(report note): addi
+./source/control_unit.vhd:863:41:@2680ns:(report note): addi
+./source/control_unit.vhd:1557:37:@2680ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@2680ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@2680ns:(report note): ebreak
+./source/control_unit.vhd:1562:37:@2700ns:(report note): ecall
+./source/control_unit.vhd:1577:25:@2700ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1577:25:@2700ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@2700ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@2700ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@2700ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+simulation finished @2760ns

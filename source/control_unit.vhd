@@ -91,6 +91,7 @@ signal s_exthImmediate : std_logic_vector(31 downto 0);
 signal s_extCiImmediate : std_logic_vector(31 downto 0);
 signal s_extCwImmediate : std_logic_vector(31 downto 0);
 signal s_extClImmediate : std_logic_vector(31 downto 0);
+signal s_extCuImmediate : std_logic_vector(31 downto 0);
 
 signal s_IsSignExtend : std_logic := '0';
 signal s_ThreadId     : integer   := 0;
@@ -163,9 +164,9 @@ function CompressedRegisterToRegister(
     variable v_Register : std_logic_vector(4 downto 0);
 begin
 
-    v_Register := 5"00000";
-    v_Register(4 downto 2) := "010";
-    v_Register(1 downto 0) := c_Register;
+    v_Register := "00000";
+    v_Register(4 downto 3) := "10";
+    v_Register(2 downto 0) := c_Register;
 
     return v_Register;
 
@@ -288,6 +289,18 @@ begin
             o_Q            => s_extClImmediate
         );
 
+    -- CU-Format
+    e_ControlUnitExtenderCU: entity work.extender_NtoM
+        generic map(
+            N => 18,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decCuImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extCuImmediate
+        );
+
     -----------------------------------------------------
 
 
@@ -360,9 +373,9 @@ begin
 
         v_Quadrant := s_decCOpcode;
 
-        v_RD  := s_RD;
-        v_RS1 := s_RS1;
-        v_RS2 := s_RS2;
+        v_RD  := s_decRD;
+        v_RS1 := s_decRS1;
+        v_RS2 := s_decRS2;
 
         if i_Reset = '0' then
             v_IsBranch                      := '0';
@@ -394,7 +407,7 @@ begin
                             -- c.addi4spn
                             if s_decCwImmediate /= 10b"0" then
                                 -- hardwired override to the stack pointer
-                                v_RS1 := 5"00010";
+                                v_RS1 := 5b"00010";
                                 v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
                                 v_ALUOperator := ADD_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
@@ -487,7 +500,7 @@ begin
 
                         when 3b"000" =>
                             -- c.addi / c.nop
-                            if s_decCRD_RS1 /= "00000" and s_decCiImmediate /= 6x"0" then
+                            if s_decCRD_RS1 /= 5b"00000" and s_decCiImmediate /= 6x"0" then
                                 -- c.addi
                                 v_ALUOperator := ADD_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
@@ -500,7 +513,7 @@ begin
                                     report "c.addi" severity note;
                                 end if;
 
-                            elsif s_decCRD_RS1 = "00000" then
+                            elsif s_decCRD_RS1 = 5b"00000" then
                                 -- c.nop
                                 if ENABLE_DEBUG then
                                     report "c.nop" severity note;
@@ -518,12 +531,12 @@ begin
 
                         when 3b"010" =>
                             -- c.li
-                            if s_decCRD_RS1 /= "00000" then
+                            if s_decCRD_RS1 /= 5b"00000" then
                                 v_ALUOperator := ADD_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
                                 v_Immediate := s_extCiImmediate;
                                 v_RD := s_decCRD_RS1;
-                                v_RS1 := 5"00000"; -- addi xd, x0, imm
+                                v_RS1 := 5b"00000"; -- addi xd, x0, imm
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMALU;
                                 if ENABLE_DEBUG then
@@ -538,9 +551,9 @@ begin
 
                         when 3b"011" =>
                             -- c.addi16sp / c.lui
-                            if s_decCRD_RS1 /= "00000" and s_decCuImmediate /= 18b"0" then
+                            if s_decCRD_RS1 /= 5b"00000" and s_decCuImmediate /= 18b"0" then
 
-                                if s_decCRD_RS1 = "00010" then
+                                if s_decCRD_RS1 = 5b"00010" then
                                     -- c.addi16sp
                                     null;
 
@@ -690,8 +703,8 @@ begin
                             v_ALUOperator := SLL_OPERATOR;
                             v_ALUSource := ALUSOURCE_IMMEDIATE;
                             v_Immediate := s_extCiImmediate;
-                            v_RD := CompressedRegisterToRegister(s_decCRD_RS1Prime);
-                            v_RS1 := CompressedRegisterToRegister(s_decCRD_RS1Prime);
+                            v_RD := s_decCRD_RS1;
+                            v_RS1 := s_decCRD_RS1;
                             v_RegisterFileWriteEnable := '1';
                             v_RegisterSource := RFSOURCE_FROMALU;
                             if ENABLE_DEBUG then
@@ -707,12 +720,12 @@ begin
 
                         when 3b"010" =>
                             -- c.lwsp
-                            if s_decCRD_RS1 /= "00000" then
+                            if s_decCRD_RS1 /= 5b"00000" then
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMRAM;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
                                 v_Immediate := s_extClImmediate;
-                                v_RS1 := 5"00010"; -- stack pointer
+                                v_RS1 := 5b"00010"; -- stack pointer
                                 v_RD := s_decCRD_RS1;
                                 v_MemoryWidth := WORD_TYPE;
                                 if ENABLE_DEBUG then
@@ -735,28 +748,49 @@ begin
                             end if;
 
                         when 3b"100" =>
-                            -- C.JR / C.MV / C.EBREAK / C.JALR / C.ADD
-                            if i_Instruction(12) = '0' then
-                                if i_Instruction(6 downto 2) = 5b"00000" then
-                                    -- C.JR
-                                    null;
-                                else
-                                    -- C.MV
-                                    null;
-                                end if;
-                            else
-                                if i_Instruction(6 downto 2) = 5b"00000" then
-                                    if i_Instruction(11 downto 7) = 5b"00000" then
-                                        -- C.EBREAK
-                                        null;
-                                    else
-                                        -- C.JALR
-                                        null;
+                            -- c.jr / c.mv / c.ebreak / c.jalr / c.add
+                            if s_decCFunc4(0) = '0' then
+
+                                if s_decCRS2 = 5b"00000" then
+                                    -- c.jr
+                                    if ENABLE_DEBUG then
+                                        report "c.jr" severity note;
                                     end if;
+
                                 else
-                                    -- C.ADD
-                                    null;
+                                    -- c.mv
+                                    if ENABLE_DEBUG then
+                                        report "c.mv" severity note;
+                                    end if;
+
                                 end if;
+
+                            else
+                                if s_decCRS2 = 5b"00000" then
+
+                                    if s_decCRD_RS1 = 5b"00000" then
+                                        -- c.ebreak
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.ebreak" severity note;
+                                        end if;
+
+                                    else
+                                        -- c.jalr
+                                        if ENABLE_DEBUG then
+                                            report "c.jalr" severity note;
+                                        end if;
+
+                                    end if;
+
+                                else
+                                    -- c.add
+                                    if ENABLE_DEBUG then
+                                        report "c.add" severity note;
+                                    end if;
+
+                                end if;
+                                
                             end if;
 
                         when 3b"101" =>
