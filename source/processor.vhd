@@ -27,18 +27,18 @@ end processor;
 
 architecture implementation of processor is
 
-signal s_DataMemoryWriteEnable : std_logic;                      -- data memory write enable signal (active high)
-signal s_DataMemoryAddress     : std_logic_vector(N-1 downto 0); -- data memory address input
-signal s_DataMemoryData        : std_logic_vector(N-1 downto 0); -- data memory data input
-signal s_DataMemoryOutput      : std_logic_vector(N-1 downto 0); -- data memory output
+signal s_DataMemoryWriteEnable : std_logic;
+signal s_DataMemoryAddress     : std_logic_vector(N-1 downto 0);
+signal s_DataMemoryData        : std_logic_vector(N-1 downto 0);
+signal s_DataMemoryOutput      : std_logic_vector(N-1 downto 0);
  
-signal s_RegisterFileWriteEnable : std_logic;                      -- register file write enable signal (active high)
-signal s_RegisterFileSelect      : std_logic_vector(4 downto 0);   -- destination register address input
-signal s_RegisterFileData        : std_logic_vector(N-1 downto 0); -- data memory data input
+signal s_RegisterFileWriteEnable : std_logic;
+signal s_RegisterFileSelect      : std_logic_vector(4 downto 0);
+signal s_RegisterFileData        : std_logic_vector(N-1 downto 0);
 
-signal s_InstructionMemoryAddress : std_logic_vector(N-1 downto 0); -- instruction memory address input
-signal s_NextInstructionAddress   : std_logic_vector(N-1 downto 0); -- instruction pointer + stride
-signal s_Instruction              : std_logic_vector(N-1 downto 0); -- instruction memory output (fetched)
+signal s_InstructionMemoryAddress : std_logic_vector(N-1 downto 0);
+signal s_NextInstructionAddress   : std_logic_vector(N-1 downto 0);
+signal s_Instruction              : std_logic_vector(N-1 downto 0);
 
 
 -- Signals to hold the intermediate outputs from the register file
@@ -60,22 +60,28 @@ signal s_BranchTaken    : std_logic;
 signal s_BranchNotTaken : std_logic;
 signal s_BranchLoad     : std_logic := '0';
 
--- Branch predictor (BTB/PHT) interface signals
-signal s_BranchUnit_Prediction        : std_logic := '0';
-signal s_BranchUnit_BTBIsHit          : std_logic := '0';
-signal s_BranchUnit_PredictedTarget   : std_logic_vector(31 downto 0) := (others => '0');
-signal s_BranchUnit_PredictedOperator : branch_operator_t := BRANCH_NONE;
+-- Branch predictor (BTB/PHT/RAS) interface signals
+signal s_BranchUnit_Prediction         : std_logic := '0';
+signal s_BranchUnit_BTBIsHit           : std_logic := '0';
+signal s_BranchUnit_PredictedTarget    : std_logic_vector(31 downto 0) := (others => '0');
+signal s_BranchUnit_PredictedOperator  : branch_operator_t := BRANCH_NONE;
+signal s_BranchUnit_IsReturnPrediction : std_logic := '0';
+signal s_BranchUnit_RASPointer         : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
+signal s_BranchUnit_RASCount           : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
+signal s_BranchUnit_RestoreEnable      : std_logic := '0';
+signal s_BranchUnit_RestorePointer     : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
+signal s_BranchUnit_RestoreCount       : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
 signal s_BranchUnit_PredictionEligible : std_logic := '0';
-signal s_BranchUnit_IsPredictionUsed  : std_logic := '0';
-signal s_BranchUnit_Mispredict        : std_logic := '0';
-signal s_BranchUnit_RedirectEnable    : std_logic := '0';
-signal s_BranchUnit_RedirectAddress   : std_logic_vector(31 downto 0) := (others => '0');
-signal s_BranchUnit_ResolvedLoad      : std_logic := '0';
+signal s_BranchUnit_IsPredictionUsed   : std_logic := '0';
+signal s_BranchUnit_IsMispredict       : std_logic := '0';
+signal s_BranchUnit_RedirectEnable     : std_logic := '0';
+signal s_BranchUnit_RedirectAddress    : std_logic_vector(31 downto 0) := (others => '0');
+signal s_BranchUnit_ResolvedLoad       : std_logic := '0';
 
--- Verified (safe) jalr prediction from decode stage
-signal s_IsJALRVerified  : std_logic := '0';
-signal s_JALR_TargetComputed    : std_logic_vector(31 downto 0) := (others => '0');
-signal s_JALR_IsPredictionUsed_IDEX     : std_logic := '0';
+-- JALR in-flight analysis
+signal s_JALR_IsVerified            : std_logic := '0';
+signal s_JALR_TargetComputed        : std_logic_vector(31 downto 0) := (others => '0');
+signal s_JALR_IsVerified_IDEX : std_logic := '0';
 signal s_PredUsed_IDEX          : std_logic := '0';
 
 signal s_IPLoad                       : std_logic := '0';
@@ -422,14 +428,22 @@ begin
         '1' when (IDEX_ID_buf.BranchMode = BRANCHMODE_JAL_OR_BCC and IDEX_ID_buf.IsBranch = '0') else
         (s_BranchTaken and IDEX_ID_buf.IsBranch);
 
-    -- used only if taken and hit in BTB
-    -- NOTE: early (IF-stage) prediction is disabled for jalr/jr; a safer decode-stage
-    -- verification path below can still predict jalr when eligible.
-    s_BranchUnit_PredictionEligible <= '0' when s_BranchUnit_PredictedOperator = JALR_TYPE else '1';
+    -- used only if taken and hit in BTB (except RAS returns)
+    s_BranchUnit_PredictionEligible <= 
+        '1' when s_BranchUnit_IsReturnPrediction = '1' else
+        '0' when s_BranchUnit_PredictedOperator = JALR_TYPE else
+        '1';
 
-    s_BranchUnit_IsPredictionUsed <= (s_BranchUnit_Prediction and s_BranchUnit_BTBIsHit and s_BranchUnit_PredictionEligible) when (
+    s_BranchUnit_IsPredictionUsed <= 
+        (s_BranchUnit_Prediction and ((s_BranchUnit_BTBIsHit and s_BranchUnit_PredictionEligible) or s_BranchUnit_IsReturnPrediction
+    )) when (
         (s_IPBreak = '0') and (s_ALUBusy = '0') and (i_InstructionLoad = '0') and (i_Reset = '0')
     ) else '0';
+
+    -- roll back speculative RAS of in-flight instructions upon mispredicted redirect
+    s_BranchUnit_RestoreEnable  <= s_BranchUnit_RedirectEnable;
+    s_BranchUnit_RestorePointer <= IDEX_IF_buf.RASCheckpointPointer;
+    s_BranchUnit_RestoreCount   <= IDEX_IF_buf.RASCheckpointCount;
 
     -- TODO: hoist into branch_unit?
     -- redirect when RS1 is not in-flight and computed target matches BTB fetch
@@ -469,10 +483,10 @@ begin
            (s_IFID_Stall = '0') and
            (i_InstructionLoad = '0') and
            (i_Reset = '0') then
-            s_IsJALRVerified <= '1';
+            s_JALR_IsVerified <= '1';
 
         else
-            s_IsJALRVerified <= '0';
+            s_JALR_IsVerified <= '0';
 
         end if;
 
@@ -486,42 +500,42 @@ begin
         if rising_edge(i_Clock) then
 
             if i_Reset = '1' then
-                s_JALR_IsPredictionUsed_IDEX <= '0';
+                s_JALR_IsVerified_IDEX <= '0';
 
             elsif (s_IDEX_Flush_Final = '1') and (s_ALUBusy = '0') then
-                s_JALR_IsPredictionUsed_IDEX <= '0';
+                s_JALR_IsVerified_IDEX <= '0';
 
             elsif (s_IDEX_Stall = '0') and (s_ALUBusy = '0') then
 
-                s_JALR_IsPredictionUsed_IDEX <= s_IsJALRVerified;
+                s_JALR_IsVerified_IDEX <= s_JALR_IsVerified;
             end if;
 
         end if;
 
     end process;
 
-    s_PredUsed_IDEX <= IDEX_IF_buf.IsPredictionUsed or s_JALR_IsPredictionUsed_IDEX;
+    s_PredUsed_IDEX <= IDEX_IF_buf.IsPredictionUsed or s_JALR_IsVerified_IDEX;
 
     -- detect potential mispredictions at the IDEX stage
-    s_BranchUnit_Mispredict <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (
+    s_BranchUnit_IsMispredict <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (
                             (s_PredUsed_IDEX = '1' and (s_BranchLoad = '0')) or
                             (s_PredUsed_IDEX = '0' and (s_BranchLoad = '1')) or
                             (s_PredUsed_IDEX = '1' and (s_BranchLoad = '1') and (IDEX_IF_buf.PredictedTarget /= s_BranchAddress))
                         ) else '0';
 
     -- resolve correct mispredicted IP or fall-through
-    s_BranchUnit_RedirectEnable  <= s_BranchUnit_Mispredict and (not s_ALUBusy);
+    s_BranchUnit_RedirectEnable  <= s_BranchUnit_IsMispredict and (not s_ALUBusy);
     s_BranchUnit_RedirectAddress <= s_BranchAddress when s_BranchLoad = '1' else IDEX_IF_buf.LinkAddress;
     s_BranchUnit_ResolvedLoad    <= s_BranchLoad and (not s_PredUsed_IDEX) and (not s_ALUBusy);
 
-    s_IPLoad        <= s_BranchUnit_RedirectEnable or s_BranchUnit_ResolvedLoad or s_IsJALRVerified or s_BranchUnit_IsPredictionUsed;
+    s_IPLoad        <= s_BranchUnit_RedirectEnable or s_BranchUnit_ResolvedLoad or s_JALR_IsVerified or s_BranchUnit_IsPredictionUsed;
     s_IPLoadAddress <= s_BranchUnit_RedirectAddress when s_BranchUnit_RedirectEnable = '1' else
                        s_BranchAddress              when s_BranchUnit_ResolvedLoad   = '1' else
-                       IFID_IF_buf.PredictedTarget  when s_IsJALRVerified     = '1' else
+                       IFID_IF_buf.PredictedTarget  when s_JALR_IsVerified     = '1' else
                        s_BranchUnit_PredictedTarget;
 
     -- flush in-flight mispredicted instructions or fall-through from verified `jalr` speculation
-    s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable or s_IsJALRVerified;
+    s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable or s_JALR_IsVerified;
     s_IDEX_Flush_Final <= s_IDEX_Flush or s_BranchUnit_RedirectEnable;
 
     e_InstructionPointer: entity work.instruction_pointer
@@ -539,14 +553,16 @@ begin
             o_LinkAddress => s_NextInstructionAddress
         );
 
-    IFID_IF_raw.InstructionAddress <= s_IPAddress;
-    IFID_IF_raw.LinkAddress        <= s_NextInstructionAddress;
-    IFID_IF_raw.Instruction        <= s_Instruction;
-    IFID_IF_raw.IsPredictionUsed   <= s_BranchUnit_IsPredictionUsed;
-    IFID_IF_raw.IsPredictionTaken          <= s_BranchUnit_Prediction;
-    IFID_IF_raw.IsBTBHit         <= s_BranchUnit_BTBIsHit;
-    IFID_IF_raw.PredictedTarget    <= s_BranchUnit_PredictedTarget;
-    IFID_IF_raw.PredictedOperator  <= s_BranchUnit_PredictedOperator;
+    IFID_IF_raw.InstructionAddress   <= s_IPAddress;
+    IFID_IF_raw.LinkAddress          <= s_NextInstructionAddress;
+    IFID_IF_raw.Instruction          <= s_Instruction;
+    IFID_IF_raw.IsPredictionUsed     <= s_BranchUnit_IsPredictionUsed;
+    IFID_IF_raw.IsPredictionTaken    <= s_BranchUnit_Prediction;
+    IFID_IF_raw.IsBTBHit             <= s_BranchUnit_BTBIsHit;
+    IFID_IF_raw.PredictedTarget      <= s_BranchUnit_PredictedTarget;
+    IFID_IF_raw.PredictedOperator    <= s_BranchUnit_PredictedOperator;
+    IFID_IF_raw.RASCheckpointPointer <= s_BranchUnit_RASPointer;
+    IFID_IF_raw.RASCheckpointCount   <= s_BranchUnit_RASCount;
 
     -----------------------------------------------------
 
@@ -575,13 +591,13 @@ begin
     e_BranchUnit: entity work.branch_unit
         port map(
             i_Clock          => i_Clock,
+            i_Reset          => i_Reset,
             i_DS1            => s_BranchOperand1,
             i_DS2            => s_BranchOperand2,
             i_BranchOperator => IDEX_ID_buf.BranchOperator,
             o_BranchTaken    => s_BranchTaken,
             o_BranchNotTaken => s_BranchNotTaken,
 
-            -- Predictor lookup (IF stage)
             i_LookupEnable      => (not i_Reset) and (not i_InstructionLoad),
             i_LookupIP          => s_IPAddress,
             i_LookupInstruction => s_Instruction,
@@ -590,12 +606,25 @@ begin
             o_PredictedTarget   => s_BranchUnit_PredictedTarget,
             o_PredictedOperator => s_BranchUnit_PredictedOperator,
 
-            -- Predictor update (branch resolution in IDEX stage)
-            i_UpdateEnable      => s_BranchUnit_UpdateEnable,
-            i_UpdateIP          => IDEX_IF_buf.InstructionAddress,
-            i_UpdateTarget      => s_BranchAddress,
-            i_UpdateTaken       => s_BranchLoad,
-            i_UpdateOperator    => IDEX_ID_buf.BranchOperator
+            o_IsReturnPrediction => s_BranchUnit_IsReturnPrediction,
+            o_RASPointer         => s_BranchUnit_RASPointer,
+            o_RASCount           => s_BranchUnit_RASCount,
+
+            i_SpeculateEnable      => s_BranchUnit_IsPredictionUsed,
+            i_SpeculateIP          => s_IPAddress,
+            i_SpeculateInstruction => s_Instruction,
+
+            i_RASRestoreEnable  => s_BranchUnit_RestoreEnable,
+            i_RASRestorePointer => s_BranchUnit_RestorePointer,
+            i_RASRestoreCount   => s_BranchUnit_RestoreCount,
+
+            i_UpdateEnable           => s_BranchUnit_UpdateEnable,
+            i_UpdateIP               => IDEX_IF_buf.InstructionAddress,
+            i_UpdateTarget           => s_BranchAddress,
+            i_UpdateTaken            => s_BranchLoad,
+            i_UpdateOperator         => IDEX_ID_buf.BranchOperator,
+            i_UpdateInstruction      => IDEX_IF_buf.Instruction,
+            i_UpdateIsPredictionUsed => IDEX_IF_buf.IsPredictionUsed
         );
 
     -----------------------------------------------------
@@ -800,8 +829,8 @@ begin
             i_BranchMode     => IDEX_ID_buf.BranchMode,
             i_BranchTaken    => s_BranchTaken,
 
-            i_PredictedUsed  => s_PredUsed_IDEX,
-            i_IsMispredict   => s_BranchUnit_Mispredict,
+            i_IsPredictionUsed => s_PredUsed_IDEX,
+            i_IsMispredict     => s_BranchUnit_IsMispredict,
 
             i_IDEX_IsBranch  => IDEX_ID_buf.IsBranch,
             i_MEMWB_IsBranch => MEMWB_ID_buf.IsBranch,

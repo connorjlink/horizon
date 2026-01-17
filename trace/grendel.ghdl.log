@@ -34,6 +34,8 @@
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@20ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@20ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ./source/control_unit.vhd:863:41:@26060ns:(report note): addi
 ./source/control_unit.vhd:863:41:@26080ns:(report note): addi
 ./source/control_unit.vhd:1514:33:@26080ns:(report note): lui

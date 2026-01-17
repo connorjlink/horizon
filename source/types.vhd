@@ -11,6 +11,11 @@ constant DATA_WIDTH : natural := 32;
 constant ADDRESS_WIDTH : natural := 10;
 constant THREAD_COUNT : natural := 2;
 
+-- Return Address Stack (RAS) configuration
+constant RAS_DEPTH        : natural := 32;
+constant RAS_POINTER_BITS : natural := 5; -- clog2(32)
+constant RAS_COUNT_BITS   : natural := 6; -- clog2(33) rounded up
+
 -- Type declaration for the register file storage
 type array_t is array (natural range <>) of std_logic_vector(31 downto 0);
 
@@ -102,27 +107,31 @@ type forwarding_path_t is (
 ------------------------------------------------------
 
 type IF_record_t is record
-    InstructionAddress : std_logic_vector(31 downto 0);
-    LinkAddress        : std_logic_vector(31 downto 0);
-    Instruction        : std_logic_vector(31 downto 0);
-    IsPredictionUsed   : std_logic;
-    IsPredictionTaken  : std_logic;
-    IsBTBHit           : std_logic;
-    PredictedTarget    : std_logic_vector(31 downto 0);
-    PredictedOperator  : branch_operator_t;
-    ThreadId           : std_logic;
+    InstructionAddress   : std_logic_vector(31 downto 0);
+    LinkAddress          : std_logic_vector(31 downto 0);
+    Instruction          : std_logic_vector(31 downto 0);
+    IsPredictionUsed     : std_logic;
+    IsPredictionTaken    : std_logic;
+    IsBTBHit             : std_logic;
+    PredictedTarget      : std_logic_vector(31 downto 0);
+    PredictedOperator    : branch_operator_t;
+    RASCheckpointPointer : std_logic_vector(RAS_POINTER_BITS-1 downto 0);
+    RASCheckpointCount   : std_logic_vector(RAS_COUNT_BITS-1 downto 0);
+    ThreadId             : std_logic;
 end record IF_record_t;
 
 constant IF_NOP : IF_record_t := (
-    InstructionAddress => (others => '0'),
-    LinkAddress        => (others => '0'),
-    Instruction        => 32x"00000013",
-    IsPredictionUsed   => '0',
-    IsPredictionTaken  => '0',
-    IsBTBHit           => '0',
-    PredictedTarget    => (others => '0'),
-    PredictedOperator  => BRANCH_NONE,
-    ThreadId           => '0'
+    InstructionAddress   => (others => '0'),
+    LinkAddress          => (others => '0'),
+    Instruction          => 32x"00000013",
+    IsPredictionUsed     => '0',
+    IsPredictionTaken    => '0',
+    IsBTBHit             => '0',
+    PredictedTarget      => (others => '0'),
+    PredictedOperator    => BRANCH_NONE,
+    RASCheckpointPointer => (others => '0'),
+    RASCheckpointCount   => (others => '0'),
+    ThreadId             => '0'
 );
 
 ------------------------------------------------------

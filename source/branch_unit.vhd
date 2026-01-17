@@ -10,6 +10,7 @@ use work.types.all;
 entity branch_unit is
     port(
         i_Clock          : in  std_logic;
+        i_Reset          : in  std_logic := '0';
 
         -- branch decision inputs
         i_DS1               : in  std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -27,12 +28,29 @@ entity branch_unit is
         o_PredictedTarget   : out std_logic_vector(DATA_WIDTH-1 downto 0);
         o_PredictedOperator : out branch_operator_t;
 
+        -- RAS / return prediction outputs (return target predicted without BTB)
+        o_IsReturnPrediction : out std_logic;
+        o_RASPointer         : out std_logic_vector(RAS_POINTER_BITS-1 downto 0);
+        o_RASCount           : out std_logic_vector(RAS_COUNT_BITS-1 downto 0);
+
+        -- speculative RAS update interface (asserted when fetch redirects using prediction)
+        i_SpeculateEnable      : in  std_logic := '0';
+        i_SpeculateIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+        i_SpeculateInstruction : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+
+        -- RAS restore (rollback to checkpoint)
+        i_RASRestoreEnable  : in  std_logic := '0';
+        i_RASRestorePointer : in  std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
+        i_RASRestoreCount   : in  std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
+
         -- update interface
-        i_UpdateEnable      : in  std_logic := '0';
-        i_UpdateIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_UpdateTarget      : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_UpdateTaken       : in  std_logic := '0';
-        i_UpdateOperator    : in  branch_operator_t := BRANCH_NONE
+        i_UpdateEnable           : in  std_logic := '0';
+        i_UpdateIP               : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+        i_UpdateTarget           : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+        i_UpdateTaken            : in  std_logic := '0';
+        i_UpdateOperator         : in  branch_operator_t := BRANCH_NONE;
+        i_UpdateInstruction      : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+        i_UpdateIsPredictionUsed : in  std_logic := '0'
     );
 end branch_unit;
 
@@ -85,6 +103,15 @@ signal s_PHT : pht_array_t := (others => (others => '0'));
 signal s_PHTUpdateEnable : std_logic := '0';
 signal s_PHTUpdateIndex  : natural range 0 to PHT_ENTRIES-1 := 0;
 
+
+subtype ras_entry_t is std_logic_vector(DATA_WIDTH-1 downto 0);
+type ras_array_t is array (0 to RAS_DEPTH-1) of ras_entry_t;
+signal s_RAS : ras_array_t := (others => (others => '0'));
+-- Pointer points to next free slot; count tracks occupancy
+signal s_RASPointer : natural range 0 to RAS_DEPTH-1 := 0;
+signal s_RASCount   : natural range 0 to RAS_DEPTH := 0;
+
+
 signal s_LookupIsHit      : std_logic := '0';
 signal s_LookupWay        : integer range 0 to BTB_WAYS-1 := 0;
 signal s_LookupOperator   : branch_operator_t := BRANCH_NONE;
@@ -92,6 +119,8 @@ signal s_LookupTarget     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others =
 signal s_LookupPrediction : std_logic := '0';
 
 signal s_PredecoderBranchOperator : branch_operator_t := BRANCH_NONE;
+
+signal s_IsReturnPrediction : std_logic := '0';
 
 begin 
 
@@ -105,7 +134,6 @@ begin
             o_BranchOperator => s_PredecoderBranchOperator
         );
 
-    -----------------------------------------------------
 
     -----------------------------------------------------
     -- Pattern History Table (storage)
@@ -149,6 +177,10 @@ begin
         variable v_PHTIndex       : natural range 0 to PHT_ENTRIES-1;
         variable v_Counter        : pht_counter_t;
         variable v_PredictedTaken : std_logic;
+
+        variable v_IsReturn    : boolean;
+        variable v_RASTopIndex : natural range 0 to RAS_DEPTH-1;
+        variable v_RASTop      : std_logic_vector(DATA_WIDTH-1 downto 0);
     begin
         v_BTBSetIndex := to_integer(unsigned(i_LookupIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
         v_BTBTag      := i_LookupIP(BTB_TAG_MSB downto BTB_TAG_LSB);
@@ -171,7 +203,37 @@ begin
 
         end loop;
 
-        if i_LookupEnable = '1' and v_BTBIsHit = '1' then
+        -- Default operator to predecoder on BTB miss.
+        if v_BTBIsHit = '0' then
+            v_BranchOperator := s_PredecoderBranchOperator;
+        end if;
+
+        -- Canonical return: jalr x0, ra, 0
+        v_IsReturn := false;
+        if (i_LookupInstruction(6 downto 0) = "1100111") and
+           (i_LookupInstruction(14 downto 12) = "000") and
+           (i_LookupInstruction(11 downto 7) = "00000") and
+           (i_LookupInstruction(19 downto 15) = "00001") and
+           (i_LookupInstruction(31 downto 20) = "000000000000") then
+            v_IsReturn := true;
+        end if;
+
+        v_RASTop := (others => '0');
+        if s_RASCount > 0 then
+            if s_RASPointer = 0 then
+                v_RASTopIndex := RAS_DEPTH - 1;
+            else
+                v_RASTopIndex := s_RASPointer - 1;
+            end if;
+            v_RASTop := s_RAS(v_RASTopIndex);
+        end if;
+
+        -- Return prediction via RAS has priority and does not require BTB.
+        if (i_LookupEnable = '1') and v_IsReturn and (s_RASCount > 0) then
+            v_PredictedTaken := '1';
+            v_BranchTarget   := v_RASTop;
+
+        elsif i_LookupEnable = '1' and v_BTBIsHit = '1' then
 
             if IsUnconditionalBranch(v_BranchOperator) then
                 v_PredictedTaken := '1';
@@ -197,12 +259,19 @@ begin
         s_LookupTarget     <= v_BranchTarget;
         s_LookupPrediction <= v_PredictedTaken;
 
+        s_IsReturnPrediction <= '1' when ((i_LookupEnable = '1') and v_IsReturn and (s_RASCount > 0)) else '0';
+
     end process;
 
     o_BTBIsHit          <= s_LookupIsHit;
     o_PredictedTarget   <= s_LookupTarget;
     o_PredictedOperator <= s_LookupOperator;
     o_Prediction        <= s_LookupPrediction;
+
+    o_IsReturnPrediction <= s_IsReturnPrediction;
+    o_RASPointer <= std_logic_vector(to_unsigned(s_RASPointer, RAS_POINTER_BITS));
+    o_RASCount   <= std_logic_vector(to_unsigned(s_RASCount,   RAS_COUNT_BITS));
+
 
     -----------------------------------------------------
     -- BTB & PHT update
@@ -287,6 +356,111 @@ begin
                     end if;
 
                 end if;
+
+            end if;
+
+        end if;
+
+    end process;
+
+
+    -----------------------------------------------------
+    -- Return Address Stack (RAS)
+    -----------------------------------------------------
+
+    process(
+        i_Clock
+    )
+        variable v_IsCallInstruction    : boolean;
+        variable v_IsReturnInstruction  : boolean;
+        variable v_Opcode : std_logic_vector(6 downto 0);
+        variable v_Func3  : std_logic_vector(2 downto 0);
+        variable v_RD     : std_logic_vector(4 downto 0);
+        variable v_RS1    : std_logic_vector(4 downto 0);
+        variable v_Imm12  : std_logic_vector(11 downto 0);
+        variable v_IPStride : std_logic_vector(DATA_WIDTH-1 downto 0);
+
+        variable v_StackPointer : natural range 0 to RAS_DEPTH-1;
+        variable v_StackCount : natural range 0 to RAS_DEPTH;
+
+        variable v_WorkInstruction : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable v_WorkIP    : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable v_ApplyResolvedUpdate : boolean;
+    begin
+
+        if rising_edge(i_Clock) then
+
+            if i_Reset = '1' then
+                s_RASPointer <= 0;
+                s_RASCount   <= 0;
+            else
+
+                -- default: hold current state
+                v_StackPointer := s_RASPointer;
+                v_StackCount := s_RASCount;
+                v_ApplyResolvedUpdate := false;
+
+                -- Roll back to checkpoint on mispredict; then re-apply resolving instruction update.
+                if i_RASRestoreEnable = '1' then
+                    v_StackPointer := to_integer(unsigned(i_RASRestorePointer));
+                    v_StackCount := to_integer(unsigned(i_RASRestoreCount));
+                    v_ApplyResolvedUpdate := (i_UpdateEnable = '1');
+                    v_WorkInstruction := i_UpdateInstruction;
+                    v_WorkIP    := i_UpdateIP;
+
+                -- Speculative update: only when the fetch unit actually redirects using prediction.
+                elsif i_SpeculateEnable = '1' then
+                    v_WorkInstruction := i_SpeculateInstruction;
+                    v_WorkIP    := i_SpeculateIP;
+                    v_ApplyResolvedUpdate := true;
+
+                -- Non-speculative update at resolution stage for non-predicted call/ret.
+                elsif (i_UpdateEnable = '1') and (i_UpdateIsPredictionUsed = '0') then
+                    v_WorkInstruction := i_UpdateInstruction;
+                    v_WorkIP    := i_UpdateIP;
+                    v_ApplyResolvedUpdate := true;
+                end if;
+
+                if v_ApplyResolvedUpdate then
+                    v_Opcode := v_WorkInstruction(6 downto 0);
+                    v_Func3  := v_WorkInstruction(14 downto 12);
+                    v_RD     := v_WorkInstruction(11 downto 7);
+                    v_RS1    := v_WorkInstruction(19 downto 15);
+                    v_Imm12  := v_WorkInstruction(31 downto 20);
+
+                    v_IsCallInstruction    := (v_Opcode = "1101111") and ((v_RD = "00001") or (v_RD = "00101"));
+                    v_IsReturnInstruction  := (v_Opcode = "1100111") and (v_Func3 = "000") and
+                               (v_RD = "00000") and (v_RS1 = "00001") and (v_Imm12 = "000000000000");
+
+                    if v_IsCallInstruction    then
+                        v_IPStride := std_logic_vector(unsigned(v_WorkIP) + to_unsigned(4, DATA_WIDTH));
+                        s_RAS(v_StackPointer) <= v_IPStride;
+
+                        if v_StackPointer = RAS_DEPTH - 1 then
+                            v_StackPointer := 0;
+                        else
+                            v_StackPointer := v_StackPointer + 1;
+                        end if;
+
+                        if v_StackCount < RAS_DEPTH then
+                            v_StackCount := v_StackCount + 1;
+                        end if;
+
+                    elsif v_IsReturnInstruction then
+                        if v_StackCount > 0 then
+                            if v_StackPointer = 0 then
+                                v_StackPointer := RAS_DEPTH - 1;
+                            else
+                                v_StackPointer := v_StackPointer - 1;
+                            end if;
+                            v_StackCount := v_StackCount - 1;
+                        end if;
+                    end if;
+
+                end if;
+
+                s_RASPointer <= v_StackPointer;
+                s_RASCount   <= v_StackCount;
 
             end if;
 

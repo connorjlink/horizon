@@ -36,7 +36,7 @@ entity hazard_unit is
         i_BranchTaken    : in  std_logic;
 
         -- Branch prediction (for avoiding unnecessary flushes on correct predictions)
-        i_PredictedUsed  : in  std_logic := '0';
+        i_IsPredictionUsed  : in  std_logic := '0';
         i_IsMispredict   : in  std_logic := '0';
         
         i_IDEX_IsBranch  : in  std_logic;
@@ -82,7 +82,7 @@ begin
         -- Detect jal/j, which doesn't rely on any external data to execute.
         -- If the fetch unit already redirected via a correct prediction, avoid inserting bubbles.
         if i_BranchMode = BRANCHMODE_JAL_OR_BCC and i_IDEX_IsBranch = '0' then
-            if (i_PredictedUsed = '0') or (i_IsMispredict = '1') then
+            if (i_IsPredictionUsed = '0') or (i_IsMispredict = '1') then
                 v_IFID_Flush := '1';
                 v_IDEX_Flush := '1';
             end if;
@@ -96,7 +96,7 @@ begin
               (i_BranchMode = BRANCHMODE_JAL_OR_BCC and i_IDEX_IsBranch = '1') then
 
             -- If jalr/jr was already redirected by a correct prediction, no hazard
-            if (i_BranchMode = BRANCHMODE_JALR) and (i_PredictedUsed = '1') and (i_IsMispredict = '0') then
+            if (i_BranchMode = BRANCHMODE_JALR) and (i_IsPredictionUsed = '1') and (i_IsMispredict = '0') then
                 null;
 
             else
@@ -117,7 +117,7 @@ begin
                 if i_IDEX_IsBranch = '1' then 
                     if i_BranchTaken = '1' then
                         -- If the fetch unit already redirected via a correct prediction, avoid bubbles.
-                        if (i_PredictedUsed = '0') or (i_IsMispredict = '1') then
+                        if (i_IsPredictionUsed = '0') or (i_IsMispredict = '1') then
                             v_IFID_Flush := '1';
                             v_IDEX_Flush := '1';
                         end if;
