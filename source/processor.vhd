@@ -71,6 +71,13 @@ signal s_BranchUnit_Mispredict        : std_logic := '0';
 signal s_BranchUnit_RedirectEnable    : std_logic := '0';
 signal s_BranchUnit_RedirectAddress   : std_logic_vector(31 downto 0) := (others => '0');
 signal s_BranchUnit_ResolvedLoad      : std_logic := '0';
+
+-- Verified (safe) jalr prediction from decode stage
+signal s_IsJALRVerified  : std_logic := '0';
+signal s_JALR_TargetComputed    : std_logic_vector(31 downto 0) := (others => '0');
+signal s_JALR_IsPredictionUsed_IDEX     : std_logic := '0';
+signal s_PredUsed_IDEX          : std_logic := '0';
+
 signal s_IPLoad                       : std_logic := '0';
 signal s_IPLoadAddress                : std_logic_vector(31 downto 0) := (others => '0');
 
@@ -416,31 +423,105 @@ begin
         (s_BranchTaken and IDEX_ID_buf.IsBranch);
 
     -- used only if taken and hit in BTB
+    -- NOTE: early (IF-stage) prediction is disabled for jalr/jr; a safer decode-stage
+    -- verification path below can still predict jalr when eligible.
     s_BranchUnit_PredictionEligible <= '0' when s_BranchUnit_PredictedOperator = JALR_TYPE else '1';
 
     s_BranchUnit_IsPredictionUsed <= (s_BranchUnit_Prediction and s_BranchUnit_BTBIsHit and s_BranchUnit_PredictionEligible) when (
         (s_IPBreak = '0') and (s_ALUBusy = '0') and (i_InstructionLoad = '0') and (i_Reset = '0')
     ) else '0';
 
+    -- TODO: hoist into branch_unit?
+    -- redirect when RS1 is not in-flight and computed target matches BTB fetch
+    process(
+        all
+    )
+        variable v_Target : std_logic_vector(31 downto 0);
+        variable v_RS1    : std_logic_vector(4 downto 0);
+        variable v_RS1Ready : boolean;
+    begin
+        v_RS1 := IDEX_ID_raw.RS1;
+
+        v_Target := std_logic_vector(signed(s_RS1Data) + signed(IDEX_ID_raw.Immediate));
+        v_Target(0) := '0'; -- enforce alignment
+
+        v_RS1Ready := true;
+        if v_RS1 /= 5x"0" then
+            if (IDEX_ID_buf.RegisterFileWriteEnable = '1' and IDEX_ID_buf.RD = v_RS1) or
+               (EXMEM_ID_buf.RegisterFileWriteEnable = '1' and EXMEM_ID_buf.RD = v_RS1) or
+               (MEMWB_ID_buf.RegisterFileWriteEnable = '1' and MEMWB_ID_buf.RD = v_RS1) then
+                v_RS1Ready := false;
+
+            end if;
+
+        end if;
+
+        s_JALR_TargetComputed <= v_Target;
+
+        if (IFID_IF_buf.PredictedOperator = JALR_TYPE) and
+           (IFID_IF_buf.IsBTBHit = '1') and
+           (IFID_IF_buf.IsPredictionTaken = '1') and
+           (IDEX_ID_raw.BranchMode = BRANCHMODE_JALR) and
+           (v_RS1Ready) and
+           (v_Target = IFID_IF_buf.PredictedTarget) and
+           (s_IPBreak = '0') and
+           (s_ALUBusy = '0') and
+           (s_IFID_Stall = '0') and
+           (i_InstructionLoad = '0') and
+           (i_Reset = '0') then
+            s_IsJALRVerified <= '1';
+
+        else
+            s_IsJALRVerified <= '0';
+
+        end if;
+
+    end process;
+
+    process(
+        i_Clock
+    )
+    begin
+
+        if rising_edge(i_Clock) then
+
+            if i_Reset = '1' then
+                s_JALR_IsPredictionUsed_IDEX <= '0';
+
+            elsif (s_IDEX_Flush_Final = '1') and (s_ALUBusy = '0') then
+                s_JALR_IsPredictionUsed_IDEX <= '0';
+
+            elsif (s_IDEX_Stall = '0') and (s_ALUBusy = '0') then
+
+                s_JALR_IsPredictionUsed_IDEX <= s_IsJALRVerified;
+            end if;
+
+        end if;
+
+    end process;
+
+    s_PredUsed_IDEX <= IDEX_IF_buf.IsPredictionUsed or s_JALR_IsPredictionUsed_IDEX;
+
     -- detect potential mispredictions at the IDEX stage
     s_BranchUnit_Mispredict <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (
-                            (IDEX_IF_buf.IsPredictionUsed = '1' and (s_BranchLoad = '0')) or
-                            (IDEX_IF_buf.IsPredictionUsed = '0' and (s_BranchLoad = '1')) or
-                            (IDEX_IF_buf.IsPredictionUsed = '1' and (s_BranchLoad = '1') and (IDEX_IF_buf.PredictedTarget /= s_BranchAddress))
+                            (s_PredUsed_IDEX = '1' and (s_BranchLoad = '0')) or
+                            (s_PredUsed_IDEX = '0' and (s_BranchLoad = '1')) or
+                            (s_PredUsed_IDEX = '1' and (s_BranchLoad = '1') and (IDEX_IF_buf.PredictedTarget /= s_BranchAddress))
                         ) else '0';
 
     -- resolve correct mispredicted IP or fall-through
     s_BranchUnit_RedirectEnable  <= s_BranchUnit_Mispredict and (not s_ALUBusy);
     s_BranchUnit_RedirectAddress <= s_BranchAddress when s_BranchLoad = '1' else IDEX_IF_buf.LinkAddress;
-    s_BranchUnit_ResolvedLoad    <= s_BranchLoad and (not IDEX_IF_buf.IsPredictionUsed) and (not s_ALUBusy);
+    s_BranchUnit_ResolvedLoad    <= s_BranchLoad and (not s_PredUsed_IDEX) and (not s_ALUBusy);
 
-    s_IPLoad        <= s_BranchUnit_RedirectEnable or s_BranchUnit_ResolvedLoad or s_BranchUnit_IsPredictionUsed;
+    s_IPLoad        <= s_BranchUnit_RedirectEnable or s_BranchUnit_ResolvedLoad or s_IsJALRVerified or s_BranchUnit_IsPredictionUsed;
     s_IPLoadAddress <= s_BranchUnit_RedirectAddress when s_BranchUnit_RedirectEnable = '1' else
                        s_BranchAddress              when s_BranchUnit_ResolvedLoad   = '1' else
+                       IFID_IF_buf.PredictedTarget  when s_IsJALRVerified     = '1' else
                        s_BranchUnit_PredictedTarget;
 
-    -- flush in-flight mispredicted instructions
-    s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable;
+    -- flush in-flight mispredicted instructions or fall-through from verified `jalr` speculation
+    s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable or s_IsJALRVerified;
     s_IDEX_Flush_Final <= s_IDEX_Flush or s_BranchUnit_RedirectEnable;
 
     e_InstructionPointer: entity work.instruction_pointer
@@ -719,7 +800,7 @@ begin
             i_BranchMode     => IDEX_ID_buf.BranchMode,
             i_BranchTaken    => s_BranchTaken,
 
-            i_PredictedUsed  => IDEX_IF_buf.IsPredictionUsed,
+            i_PredictedUsed  => s_PredUsed_IDEX,
             i_IsMispredict   => s_BranchUnit_Mispredict,
 
             i_IDEX_IsBranch  => IDEX_ID_buf.IsBranch,
