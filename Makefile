@@ -280,5 +280,10 @@ simulate_all:
 	make simulate ASM=$(ASSEMBLY_DIR)/bubblesort.s
 	make simulate ASM=$(ASSEMBLY_DIR)/control_flow.s
 	make simulate ASM=$(ASSEMBLY_DIR)/fibonacci.s
-	make simulate ASM=$(ASSEMBLY_DIR)/good_single_cycle.s
 	make simulate ASM=$(ASSEMBLY_DIR)/ok_single_cycle.s
+
+simulate_match:
+	make simulate ASM=$(ASSEMBLY_DIR)/base.s
+	make simulate ASM=$(ASSEMBLY_DIR)/control_flow.s
+	make simulate ASM=$(ASSEMBLY_DIR)/grendel.s
+	make simulate ASM=$(ASSEMBLY_DIR)/bubblesort.s

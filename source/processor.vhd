@@ -65,10 +65,12 @@ signal s_BranchUnit_Prediction        : std_logic := '0';
 signal s_BranchUnit_BTBIsHit          : std_logic := '0';
 signal s_BranchUnit_PredictedTarget   : std_logic_vector(31 downto 0) := (others => '0');
 signal s_BranchUnit_PredictedOperator : branch_operator_t := BRANCH_NONE;
+signal s_BranchUnit_PredictionEligible : std_logic := '0';
 signal s_BranchUnit_IsPredictionUsed  : std_logic := '0';
 signal s_BranchUnit_Mispredict        : std_logic := '0';
 signal s_BranchUnit_RedirectEnable    : std_logic := '0';
 signal s_BranchUnit_RedirectAddress   : std_logic_vector(31 downto 0) := (others => '0');
+signal s_BranchUnit_ResolvedLoad      : std_logic := '0';
 signal s_IPLoad                       : std_logic := '0';
 signal s_IPLoadAddress                : std_logic_vector(31 downto 0) := (others => '0');
 
@@ -405,7 +407,7 @@ begin
     -----------------------------------------------------
 
     s_BranchAddress <= std_logic_vector(signed(IDEX_IF_buf.InstructionAddress) + signed(IDEX_ID_buf.Immediate)) when (IDEX_ID_buf.BranchMode = BRANCHMODE_JAL_OR_BCC) else
-                       std_logic_vector(signed(IDEX_ID_buf.DS1)                + signed(IDEX_ID_buf.Immediate)) when (IDEX_ID_buf.BranchMode = BRANCHMODE_JALR) else 
+                       std_logic_vector(signed(s_BranchOperand1)               + signed(IDEX_ID_buf.Immediate)) when (IDEX_ID_buf.BranchMode = BRANCHMODE_JALR) else 
                        (others => '0');
 
     s_BranchLoad <=
@@ -414,7 +416,11 @@ begin
         (s_BranchTaken and IDEX_ID_buf.IsBranch);
 
     -- used only if taken and hit in BTB
-    s_BranchUnit_IsPredictionUsed <= s_BranchUnit_Prediction and s_BranchUnit_BTBIsHit;
+    s_BranchUnit_PredictionEligible <= '0' when s_BranchUnit_PredictedOperator = JALR_TYPE else '1';
+
+    s_BranchUnit_IsPredictionUsed <= (s_BranchUnit_Prediction and s_BranchUnit_BTBIsHit and s_BranchUnit_PredictionEligible) when (
+        (s_IPBreak = '0') and (s_ALUBusy = '0') and (i_InstructionLoad = '0') and (i_Reset = '0')
+    ) else '0';
 
     -- detect potential mispredictions at the IDEX stage
     s_BranchUnit_Mispredict <= '1' when (IDEX_ID_buf.BranchOperator /= BRANCH_NONE) and (
@@ -424,11 +430,14 @@ begin
                         ) else '0';
 
     -- resolve correct mispredicted IP or fall-through
-    s_BranchUnit_RedirectEnable  <= s_BranchUnit_Mispredict and (not s_IPBreak) and (not s_ALUBusy);
+    s_BranchUnit_RedirectEnable  <= s_BranchUnit_Mispredict and (not s_ALUBusy);
     s_BranchUnit_RedirectAddress <= s_BranchAddress when s_BranchLoad = '1' else IDEX_IF_buf.LinkAddress;
+    s_BranchUnit_ResolvedLoad    <= s_BranchLoad and (not IDEX_IF_buf.IsPredictionUsed) and (not s_ALUBusy);
 
-    s_IPLoad        <= s_BranchUnit_RedirectEnable or (s_BranchUnit_IsPredictionUsed and (not s_IPBreak) and (not s_ALUBusy) and (not i_InstructionLoad) and (not i_Reset));
-    s_IPLoadAddress <= s_BranchUnit_RedirectAddress when s_BranchUnit_RedirectEnable = '1' else s_BranchUnit_PredictedTarget;
+    s_IPLoad        <= s_BranchUnit_RedirectEnable or s_BranchUnit_ResolvedLoad or s_BranchUnit_IsPredictionUsed;
+    s_IPLoadAddress <= s_BranchUnit_RedirectAddress when s_BranchUnit_RedirectEnable = '1' else
+                       s_BranchAddress              when s_BranchUnit_ResolvedLoad   = '1' else
+                       s_BranchUnit_PredictedTarget;
 
     -- flush in-flight mispredicted instructions
     s_IFID_Flush_Final <= s_IFID_Flush or s_BranchUnit_RedirectEnable;

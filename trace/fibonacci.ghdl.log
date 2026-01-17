@@ -1415,9 +1415,25 @@
 ./source/control_unit.vhd:863:41:@29940ns:(report note): addi
 ./source/control_unit.vhd:863:41:@29940ns:(report note): addi
 ./source/control_unit.vhd:863:41:@29960ns:(report note): addi
-./source/control_unit.vhd:1577:25:@29960ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-./source/control_unit.vhd:1577:25:@29960ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@29960ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@29960ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-./source/control_unit.vhd:1577:25:@29960ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-simulation finished @30040ns
+./source/control_unit.vhd:836:33:@29960ns:(report note): jal
+./source/control_unit.vhd:836:33:@29960ns:(report note): jal
+./source/control_unit.vhd:836:33:@29960ns:(report note): jal
+./source/control_unit.vhd:836:33:@29980ns:(report note): jal
+./source/control_unit.vhd:1145:49:@29980ns:(report note): add
+./source/control_unit.vhd:1145:49:@29980ns:(report note): add
+./source/control_unit.vhd:1145:49:@29980ns:(report note): add
+./source/control_unit.vhd:1145:49:@30us:(report note): add
+./source/control_unit.vhd:863:41:@30us:(report note): addi
+./source/control_unit.vhd:863:41:@30us:(report note): addi
+./source/control_unit.vhd:863:41:@30us:(report note): addi
+./source/control_unit.vhd:863:41:@30020ns:(report note): addi
+./source/control_unit.vhd:1557:37:@30020ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@30020ns:(report note): ebreak
+./source/control_unit.vhd:1557:37:@30020ns:(report note): ebreak
+./source/control_unit.vhd:1562:37:@30040ns:(report note): ecall
+./source/control_unit.vhd:1577:25:@30040ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1577:25:@30040ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@30040ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@30040ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1577:25:@30040ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+simulation finished @30100ns

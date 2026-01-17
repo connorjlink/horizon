@@ -524,4 +524,8 @@ In clock cycle: 434
 Register Write to Reg: 0x00 Val: 0x00400098
 In clock cycle: 436
 Register Write to Reg: 0x00 Val: 0x00000000
-Execution stopped at cycle 437
+In clock cycle: 437
+Register Write to Reg: 0x00 Val: 0x00400054
+In clock cycle: 439
+Register Write to Reg: 0x00 Val: 0x00000000
+Execution stopped at cycle 440
