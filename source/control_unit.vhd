@@ -56,32 +56,40 @@ signal s_decbImmediate : std_logic_vector(12 downto 0);
 signal s_decuImmediate : std_logic_vector(31 downto 12);
 signal s_decjImmediate : std_logic_vector(20 downto 0);
 signal s_dechImmediate : std_logic_vector(4 downto 0);
+signal s_decRD         : std_logic_vector(4 downto 0);
+signal s_decRS1        : std_logic_vector(4 downto 0);
+signal s_decRS2        : std_logic_vector(4 downto 0);
 
 -- Compressed (C) decoder fields
-signal s_decCOpcode       : std_logic_vector(1 downto 0);
-signal s_decCFunc2        : std_logic_vector(1 downto 0);
-signal s_decCFunc3        : std_logic_vector(2 downto 0);
-signal s_decCFunc4        : std_logic_vector(3 downto 0);
-signal s_decCFunc6        : std_logic_vector(5 downto 0);
-signal s_decCiImmediate   : std_logic_vector(5 downto 0);
-signal s_decCjImmediate   : std_logic_vector(11 downto 0);
-signal s_decCuImmediate   : std_logic_vector(17 downto 0);
-signal s_decCbImmediate   : std_logic_vector(8 downto 0);
-signal s_decCwImmediate   : std_logic_vector(9 downto 0);
-signal s_decClImmediate   : std_logic_vector(6 downto 0);
-signal s_decCsImmediate   : std_logic_vector(7 downto 0);
-signal s_decCRD_RS1       : std_logic_vector(4 downto 0);
-signal s_decCRS2          : std_logic_vector(4 downto 0);
-signal s_decCRS1Prime     : std_logic_vector(2 downto 0);
-signal s_decCRD_RS2Prime  : std_logic_vector(2 downto 0);
+signal s_decCOpcode      : std_logic_vector(1 downto 0);
+signal s_decCFunc2       : std_logic_vector(1 downto 0);
+signal s_decCFunc3       : std_logic_vector(2 downto 0);
+signal s_decCFunc4       : std_logic_vector(3 downto 0);
+signal s_decCFunc6       : std_logic_vector(5 downto 0);
+signal s_decCiImmediate  : std_logic_vector(5 downto 0);
+signal s_decCjImmediate  : std_logic_vector(11 downto 0);
+signal s_decCuImmediate  : std_logic_vector(17 downto 0);
+signal s_decCbImmediate  : std_logic_vector(8 downto 0);
+signal s_decCwImmediate  : std_logic_vector(9 downto 0);
+signal s_decClImmediate  : std_logic_vector(6 downto 0);
+signal s_decCsImmediate  : std_logic_vector(7 downto 0);
+signal s_decCRD_RS1      : std_logic_vector(4 downto 0);
+signal s_decCRS2         : std_logic_vector(4 downto 0);
+signal s_decCRS1Prime    : std_logic_vector(2 downto 0);
+signal s_decCRD_RS2Prime : std_logic_vector(2 downto 0);
 
 -- Signals to hold the results from the immediate extenders
+-- Uncompressed
 signal s_extiImmediate : std_logic_vector(31 downto 0);
 signal s_extsImmediate : std_logic_vector(31 downto 0);
 signal s_extbImmediate : std_logic_vector(31 downto 0);
 signal s_extuImmediate : std_logic_vector(31 downto 0);
 signal s_extjImmediate : std_logic_vector(31 downto 0);
 signal s_exthImmediate : std_logic_vector(31 downto 0);
+-- Compressed
+signal s_extCiImmediate : std_logic_vector(31 downto 0);
+signal s_extCwImmediate : std_logic_vector(31 downto 0);
+signal s_extClImmediate : std_logic_vector(31 downto 0);
 
 signal s_IsSignExtend : std_logic := '0';
 signal s_ThreadId     : integer   := 0;
@@ -148,6 +156,20 @@ begin
 
 end procedure;
 
+function CompressedRegisterToRegister(
+    constant c_Register : std_logic_vector(2 downto 0)
+) return std_logic_vector is
+    variable v_Register : std_logic_vector(4 downto 0);
+begin
+
+    v_Register := 5"00000";
+    v_Register(4 downto 2) := "010";
+    v_Register(1 downto 0) := c_Register;
+
+    return v_Register;
+
+end function;
+
 -----------------------------------------------------
 
 begin
@@ -160,6 +182,10 @@ begin
     -- 4-byte instructions are indicated by a 11 in the two least-significant bits
     o_IsStride4 <= '1' when s_decCOpcode = 2b"11" else
                   '0';
+
+    -----------------------------------------------------
+    -- Uncompressed Immediate Extenders
+    -----------------------------------------------------
 
     -- I-format
     e_ControlUnitExtenderI: entity work.extender_NtoM
@@ -217,26 +243,72 @@ begin
     s_exthImmediate(31 downto 5) <= 27x"0";
     s_exthImmediate(4 downto 0)  <= s_dechImmediate;
 
+    -----------------------------------------------------
+
+
+
+    -----------------------------------------------------
+    -- Compressed Immediate Extenders
+    -----------------------------------------------------
+
+    -- CI-Format
+    e_ControlUnitExtenderCI: entity work.extender_NtoM
+        generic map(
+            N => 6,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decCiImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extCiImmediate
+        );
+
+    -- CIW-Format
+    e_ControlUnitExtenderCIW: entity work.extender_NtoM
+        generic map(
+            N => 10,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decCwImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extCwImmediate
+        );
+
+    -- CL-Format
+    e_ControlUnitExtenderCL: entity work.extender_NtoM
+        generic map(
+            N => 7,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decClImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extClImmediate
+        );
+
+    -----------------------------------------------------
+
 
     e_InstructionDecoder: entity work.instruction_decoder
         port map(
-            i_Instruction => i_Instruction,
+            i_Instruction    => i_Instruction,
             -- Uncompressed instruction fields
-            o_Opcode      => s_decOpcode,
-            o_RD          => o_RD,
-            o_RS1         => o_RS1,
-            o_RS2         => o_RS2,
-            o_Func3       => s_decFunc3,
-            o_Func7       => s_decFunc7,
-            o_Func5       => s_decFunc5,
-            o_Aq          => s_decAq,
-            o_Rl          => s_decRl,
-            o_iImmediate  => s_deciImmediate,
-            o_sImmediate  => s_decsImmediate,
-            o_bImmediate  => s_decbImmediate,
-            o_uImmediate  => s_decuImmediate,
-            o_jImmediate  => s_decjImmediate,
-            o_hImmediate  => s_dechImmediate,
+            o_Opcode         => s_decOpcode,
+            o_RD             => s_decRD,
+            o_RS1            => s_decRS1,
+            o_RS2            => s_decRS2,
+            o_Func3          => s_decFunc3,
+            o_Func7          => s_decFunc7,
+            o_Func5          => s_decFunc5,
+            o_Aq             => s_decAq,
+            o_Rl             => s_decRl,
+            o_iImmediate     => s_deciImmediate,
+            o_sImmediate     => s_decsImmediate,
+            o_bImmediate     => s_decbImmediate,
+            o_uImmediate     => s_decuImmediate,
+            o_jImmediate     => s_decjImmediate,
+            o_hImmediate     => s_dechImmediate,
             -- Compressed instruction fields
             o_C_Opcode       => s_decCOpcode,
             o_C_Func2        => s_decCFunc2,
@@ -259,6 +331,9 @@ begin
     process(
         all
     )
+        variable v_RD                            : std_logic_vector(4 downto 0);
+        variable v_RS1                           : std_logic_vector(4 downto 0);
+        variable v_RS2                           : std_logic_vector(4 downto 0);
         variable v_Quadrant                      : std_logic_vector(1 downto 0);
         variable v_IsBranch                      : std_logic;
         variable v_Break                         : std_logic;
@@ -283,6 +358,10 @@ begin
 
         v_Quadrant := s_decCOpcode;
 
+        v_RD  := s_RD;
+        v_RS1 := s_RS1;
+        v_RS2 := s_RS2;
+
         if i_Reset = '0' then
             v_IsBranch                      := '0';
             v_Break                         := '0';
@@ -303,7 +382,6 @@ begin
             v_AtomicSequesterThread         := (others => '0');
             v_AqStallPendingThread          := (others => '0');
 
-
             case v_Quadrant is
 
                 when "00" =>
@@ -312,7 +390,23 @@ begin
 
                         when 3b"000" =>
                             -- c.addi4spn
-                            null;
+                            if s_decCwImmediate /= 10b"0" then
+                                -- hardwired override to the stack pointer
+                                v_RS1 := 5"00010";
+                                v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
+                                v_ALUOperator := ADD_OPERATOR;
+                                v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                v_Immediate := s_extCwImmediate;
+                                v_RegisterFileWriteEnable := '1';
+                                v_RegisterSource := RFSOURCE_FROMALU;
+
+                            else
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "c.addi4spn (Illegal Instruction with immediate = 0)" severity note;
+                                end if;
+
+                            end if;
 
                         when 3b"001" =>
                             -- c.fld
@@ -323,7 +417,13 @@ begin
 
                         when 3b"010" =>
                             -- c.lw
-                            null;
+                            v_RegisterFileWriteEnable := '1';
+                            v_RegisterSource := RFSOURCE_FROMRAM;
+                            v_ALUSource := ALUSOURCE_IMMEDIATE;
+                            v_Immediate := s_extClImmediate;
+                            v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
+                            v_MemoryWidth := WORD_TYPE;
 
                         when 3b"011" =>
                             -- c.flw
@@ -1339,6 +1439,9 @@ begin
 
         end if;
 
+        o_RD                            <= v_RD;
+        o_RS1                           <= v_RS1;
+        o_RS2                           <= v_RS2;
         o_IsBranch                      <= v_IsBranch;
         o_Break                         <= v_Break;
         o_IsSignExtend                  <= v_IsSignExtend;
