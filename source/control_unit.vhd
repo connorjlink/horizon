@@ -92,6 +92,8 @@ signal s_extCiImmediate : std_logic_vector(31 downto 0);
 signal s_extCwImmediate : std_logic_vector(31 downto 0);
 signal s_extClImmediate : std_logic_vector(31 downto 0);
 signal s_extCuImmediate : std_logic_vector(31 downto 0);
+signal s_extCjImmediate : std_logic_vector(31 downto 0);
+signal s_extCbImmediate : std_logic_vector(31 downto 0);
 
 signal s_IsSignExtend : std_logic := '0';
 signal s_ThreadId     : integer   := 0;
@@ -299,6 +301,30 @@ begin
             i_D            => s_decCuImmediate,
             i_IsSignExtend => s_IsSignExtend,
             o_Q            => s_extCuImmediate
+        );
+
+    -- CJ-Format
+    e_ControlUnitExtenderCJ: entity work.extender_NtoM
+        generic map(
+            N => 12,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decCjImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extCjImmediate
+        );
+
+    -- CB-Format
+    e_ControlUnitExtenderCB: entity work.extender_NtoM
+        generic map(
+            N => 9,
+            M => DATA_WIDTH
+        )
+        port map(
+            i_D            => s_decCbImmediate,
+            i_IsSignExtend => s_IsSignExtend,
+            o_Q            => s_extCbImmediate
         );
 
     -----------------------------------------------------
@@ -676,15 +702,39 @@ begin
 
                         when 3b"101" =>
                             -- c.j
+                            v_Immediate := s_extCjImmediate;
+                            v_BranchOperator := BEQ_TYPE;
+                            v_BranchMode := BRANCHMODE_JAL_OR_BCC;
+                            v_IsBranch := '1';
+                            v_RS1 := 5b"00000"; -- force x0 = x0
+                            v_RS2 := 5b"00000";
+                            if ENABLE_DEBUG then
+                                report "c.j" severity note;
+                            end if;
+
                             null;
 
                         when 3b"110" =>
                             -- c.beqz
-                            null;
+                            v_BranchOperator := BEQ_TYPE;
+                            v_BranchMode := BRANCHMODE_JAL_OR_BCC;
+                            v_IsBranch := '1';
+                            v_Immediate := s_extCbImmediate;
+                            v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            if ENABLE_DEBUG then
+                                report "c.beqz" severity note;
+                            end if;
 
                         when 3b"111" =>
                             -- c.bnez
-                            null;
+                            v_BranchOperator := BNE_TYPE;
+                            v_BranchMode := BRANCHMODE_JAL_OR_BCC;
+                            v_IsBranch := '1';
+                            v_Immediate := s_extCbImmediate;
+                            v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            if ENABLE_DEBUG then
+                                report "c.bnez" severity note;
+                            end if;
 
                         when others =>
                             v_Break := '1';
@@ -753,14 +803,45 @@ begin
 
                                 if s_decCRS2 = 5b"00000" then
                                     -- c.jr
-                                    if ENABLE_DEBUG then
-                                        report "c.jr" severity note;
+                                    if s_decCRD_RS1 /= 5b"00000" then
+                                        v_Immediate := 32x"0";
+                                        v_BranchOperator := JALR_TYPE;
+                                        v_BranchMode := BRANCHMODE_JALR;
+                                        v_RS1 := s_decCRD_RS1;
+                                        v_RD := 5b"00000"; -- discard the link address
+                                        v_Immediate := 32x"0";
+                                        if ENABLE_DEBUG then
+                                            report "c.jr" severity note;
+                                        end if;
+
+                                    else
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.jr (Illegal Instruction with rs1 = x0)" severity note;
+                                        end if;
+
                                     end if;
 
                                 else
                                     -- c.mv
-                                    if ENABLE_DEBUG then
-                                        report "c.mv" severity note;
+                                    if s_decCRD_RS1 /= 5b"00000" then
+                                        v_ALUOperator := ADD_OPERATOR;
+                                        v_ALUSource := ALUSOURCE_REGISTER;
+                                        v_RD := s_decCRD_RS1;
+                                        v_RS1 := 5b"00000"; -- x0
+                                        v_RS2 := s_decCRS2;
+                                        v_RegisterFileWriteEnable := '1';
+                                        v_RegisterSource := RFSOURCE_FROMALU;
+                                        if ENABLE_DEBUG then
+                                            report "c.mv" severity note;
+                                        end if;
+
+                                    else
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.mv (Illegal Instruction with rd = x0 or rs2 = x0)" severity note;
+                                        end if;
+
                                     end if;
 
                                 end if;
@@ -777,16 +858,49 @@ begin
 
                                     else
                                         -- c.jalr
-                                        if ENABLE_DEBUG then
-                                            report "c.jalr" severity note;
+                                        if s_decCRD_RS1 /= 5b"00000" then
+                                            v_Immediate := 32x"0";
+                                            v_BranchOperator := JALR_TYPE;
+                                            v_RegisterFileWriteEnable := '1';
+                                            v_RegisterSource := RFSOURCE_FROMNEXTIP;
+                                            v_BranchMode := BRANCHMODE_JALR;
+                                            v_RS1 := s_decCRD_RS1;
+                                            v_RD := s_decCRD_RS1; -- link address
+                                            v_Immediate := 32x"0";
+                                            if ENABLE_DEBUG then
+                                                report "c.jalr" severity note;
+                                            end if;
+
+                                        else
+                                            v_Break := '1';
+                                            if ENABLE_DEBUG then
+                                                report "c.jalr (Illegal Instruction with rd = x0)" severity note;
+                                            end if;
+
                                         end if;
 
                                     end if;
 
                                 else
                                     -- c.add
-                                    if ENABLE_DEBUG then
-                                        report "c.add" severity note;
+                                    if s_decCRD_RS1 /= 5b"00000" then
+                                        v_ALUOperator := ADD_OPERATOR;
+                                        v_ALUSource := ALUSOURCE_REGISTER;
+                                        v_RD := s_decCRD_RS1;
+                                        v_RS1 := s_decCRD_RS1;
+                                        v_RS2 := s_decCRS2;
+                                        v_RegisterFileWriteEnable := '1';
+                                        v_RegisterSource := RFSOURCE_FROMALU;
+                                        if ENABLE_DEBUG then
+                                            report "c.add" severity note;
+                                        end if;
+
+                                    else
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.add (Illegal Instruction with rd = x0)" severity note;
+                                        end if;
+
                                     end if;
 
                                 end if;

@@ -548,7 +548,7 @@ begin
             i_Stall       => s_IPBreak or s_ALUBusy,
             i_Load        => s_IPLoad,
             i_LoadAddress => s_IPLoadAddress,
-            i_Stride      => '1', -- IDEX_ID_buf.IsStride4, -- NOTE: This might be 1 pipeline stage too late to increment the correct corresponding amount. But, resolving this requires instruction pre-decoding to compute length, so just assume 4-byte instructions for now
+            i_IsStride4   => IDEX_ID_raw.IsStride4, -- NOTE: this must be _raw to avoid miscalculation (unless using instruction pre-decoder)
             o_Address     => s_IPAddress,
             o_LinkAddress => s_NextInstructionAddress
         );

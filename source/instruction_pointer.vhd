@@ -16,7 +16,7 @@ entity instruction_pointer is
         i_Reset       : in  std_logic;
         i_Load        : in  std_logic;
         i_LoadAddress : in  std_logic_vector(31 downto 0);
-        i_Stride      : in  std_logic; -- 0: increment 2 bytes, 1: increment 4 bytes
+        i_IsStride4      : in  std_logic; -- 0: increment 2 bytes, 1: increment 4 bytes
         i_Stall       : in  std_logic;
         o_Address     : out std_logic_vector(31 downto 0);
         o_LinkAddress : out std_logic_vector(31 downto 0)
@@ -31,7 +31,7 @@ signal s_IPData        : std_logic_vector(31 downto 0);
 signal s_IPAddress     : std_logic_vector(31 downto 0);
 
 -- Signals for upcounting logic
-signal s_IsStride4    : std_logic_vector(31 downto 0);
+signal s_Stride    : std_logic_vector(31 downto 0);
 signal s_LinkAddress : std_logic_vector(31 downto 0);
 
 begin
@@ -57,8 +57,8 @@ begin
             o_Q           => s_IPAddress
         );
 
-    s_IsStride4 <= 32x"2" when i_Stride = '0' else
-                  32x"4";
+    s_Stride <= 32x"2" when i_IsStride4 = '0' else
+                32x"4";
 
     g_Upcounter: entity work.adder_N
         generic map(
@@ -66,7 +66,7 @@ begin
         )
         port map(
             i_A     => s_IPAddress,
-            i_B     => s_IsStride4,
+            i_B     => s_Stride,
             i_Carry => '0',
             o_S     => s_LinkAddress,
             o_Carry => open

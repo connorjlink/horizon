@@ -25,7 +25,7 @@ signal s_Clock, s_Reset : std_logic := '0';
 -- Stimulus signals
 signal s_iLoad        : std_logic := '0';
 signal s_iLoadAddress : std_logic_vector(31 downto 0) := 32x"0";
-signal s_iStride      : std_logic := '0';
+signal s_iIsStride4      : std_logic := '0';
 signal s_iStall       : std_logic := '0';
 signal s_oAddress     : std_logic_vector(31 downto 0);
 signal s_oLinkAddress : std_logic_vector(31 downto 0);
@@ -42,7 +42,7 @@ begin
             i_Reset       => s_Reset,
             i_Load        => s_iLoad,
             i_LoadAddress => s_iLoadAddress,
-            i_Stride      => s_iStride,
+            i_IsStride4      => s_iIsStride4,
             i_Stall       => s_iStall,
             o_Address     => s_oAddress,
             o_LinkAddress => s_oLinkAddress
@@ -78,7 +78,7 @@ begin
 
         s_iLoad <= '0';
         s_iLoadAddress <= 32x"0";
-        s_iStride <= '1';
+        s_iIsStride4 <= '1';
         s_iStall <= '0';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"00000000")
@@ -106,7 +106,7 @@ begin
     
         s_iLoad <= '0';
         s_iLoadAddress <= 32x"0";
-        s_iStride <= '0';
+        s_iIsStride4 <= '0';
         s_iStall <= '0';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"00000012")
@@ -134,7 +134,7 @@ begin
 
         s_iLoad <= '0';
         s_iLoadAddress <= 32x"0";
-        s_iStride <= '1';
+        s_iIsStride4 <= '1';
         s_iStall <= '1';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"0000001A")
@@ -148,7 +148,7 @@ begin
         assert (s_oAddress = 32x"0000001A")
             report "tb_instruction_pointer: testcase 3 failed (expected Address=$0000001A)"
             severity error;
-        s_iStride <= '0';
+        s_iIsStride4 <= '0';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"0000001A")
             report "tb_instruction_pointer: testcase 3 failed (expected Address=$0000001A)"
@@ -165,7 +165,7 @@ begin
         
         s_iLoad <= '1';
         s_iLoadAddress <= 32x"FEEDFACE";
-        s_iStride <= '0';
+        s_iIsStride4 <= '0';
         s_iStall <= '0';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"FEEDFACE")
@@ -194,7 +194,7 @@ begin
 
         s_iLoad <= '1';
         s_iLoadAddress <= 32x"0";
-        s_iStride <= '0';
+        s_iIsStride4 <= '0';
         s_iStall <= '0';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"00000000")
@@ -213,7 +213,7 @@ begin
         assert (s_oAddress = 32x"00000006")
             report "tb_instruction_pointer: testcase 5 failed (expected Address=$00000006)"
             severity error;
-        s_iStride <= '1';
+        s_iIsStride4 <= '1';
         wait for CLOCK_PERIOD;
         assert (s_oAddress = 32x"0000000A")
             report "tb_instruction_pointer: testcase 5 failed (expected Address=$0000000A)"
