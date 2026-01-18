@@ -432,14 +432,14 @@ begin
                         when 3b"000" =>
                             -- c.addi4spn
                             if s_decCwImmediate /= 10b"0" then
-                                -- hardwired override to the stack pointer
-                                v_RS1 := 5b"00010";
+                                v_RS1 := 5b"00010"; -- hardwired stack pointer
                                 v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
                                 v_ALUOperator := ADD_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
                                 v_Immediate := s_extCwImmediate;
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMALU;
+                                v_IsSignExtend := '0'; -- zero-extend
                                 if ENABLE_DEBUG then
                                     report "c.addi4spn" severity note;
                                 end if;
@@ -468,6 +468,7 @@ begin
                             v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
                             v_RD := CompressedRegisterToRegister(s_decCRD_RS2Prime);
                             v_MemoryWidth := WORD_TYPE;
+                            v_IsSignExtend := '0'; -- zero-extend
                             if ENABLE_DEBUG then
                                 report "c.lw" severity note;
                             end if;
@@ -501,6 +502,7 @@ begin
                             v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
                             v_RS2 := CompressedRegisterToRegister(s_decCRD_RS2Prime);
                             v_MemoryWidth := WORD_TYPE;
+                            v_IsSignExtend := '0'; -- zero-extend
                             if ENABLE_DEBUG then
                                 report "c.sw" severity note;
                             end if;
@@ -581,6 +583,7 @@ begin
 
                                 if s_decCRD_RS1 = 5b"00010" then
                                     -- c.addi16sp
+                                    -- TODO:
                                     null;
 
                                 else
@@ -608,28 +611,46 @@ begin
 
                                 when 2b"00" =>
                                     -- c.srli
-                                    v_ALUOperator := SRL_OPERATOR;
-                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
-                                    v_Immediate := s_extCiImmediate;
-                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
-                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
-                                    v_RegisterFileWriteEnable := '1';
-                                    v_RegisterSource := RFSOURCE_FROMALU;
-                                    if ENABLE_DEBUG then
-                                        report "c.srli" severity note;
+                                    if s_decCFunc4(0) = '0' then
+                                        v_ALUOperator := SRL_OPERATOR;
+                                        v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                        v_Immediate := s_extCiImmediate;
+                                        v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                        v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                        v_RegisterFileWriteEnable := '1';
+                                        v_RegisterSource := RFSOURCE_FROMALU;
+                                        if ENABLE_DEBUG then
+                                            report "c.srli" severity note;
+                                        end if;
+
+                                    else
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.srli (Illegal Instruction with funct4[0] != 0)" severity note;
+                                        end if;
+
                                     end if;
 
                                 when 2b"01" =>
                                     -- c.srai
-                                    v_ALUOperator := SRA_OPERATOR;
-                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
-                                    v_Immediate := s_extCiImmediate;
-                                    v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
-                                    v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
-                                    v_RegisterFileWriteEnable := '1';
-                                    v_RegisterSource := RFSOURCE_FROMALU;
-                                    if ENABLE_DEBUG then
-                                        report "c.srai" severity note;
+                                    if s_decCFunc4(0) = '0' then
+                                        v_ALUOperator := SRA_OPERATOR;
+                                        v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                        v_Immediate := s_extCiImmediate;
+                                        v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
+                                        v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                                        v_RegisterFileWriteEnable := '1';
+                                        v_RegisterSource := RFSOURCE_FROMALU;
+                                        if ENABLE_DEBUG then
+                                            report "c.srai" severity note;
+                                        end if;
+
+                                    else
+                                        v_Break := '1';
+                                        if ENABLE_DEBUG then
+                                            report "c.srai (Illegal Instruction with funct4[0] != 0)" severity note;
+                                        end if;
+
                                     end if;
 
                                 when 2b"10" =>
@@ -721,6 +742,7 @@ begin
                             v_IsBranch := '1';
                             v_Immediate := s_extCbImmediate;
                             v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            v_RS2 := 5b"00000";
                             if ENABLE_DEBUG then
                                 report "c.beqz" severity note;
                             end if;
@@ -732,6 +754,7 @@ begin
                             v_IsBranch := '1';
                             v_Immediate := s_extCbImmediate;
                             v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
+                            v_RS2 := 5b"00000";
                             if ENABLE_DEBUG then
                                 report "c.bnez" severity note;
                             end if;
@@ -750,15 +773,24 @@ begin
 
                         when 3b"000" =>
                             -- c.slli
-                            v_ALUOperator := SLL_OPERATOR;
-                            v_ALUSource := ALUSOURCE_IMMEDIATE;
-                            v_Immediate := s_extCiImmediate;
-                            v_RD := s_decCRD_RS1;
-                            v_RS1 := s_decCRD_RS1;
-                            v_RegisterFileWriteEnable := '1';
-                            v_RegisterSource := RFSOURCE_FROMALU;
-                            if ENABLE_DEBUG then
-                                report "c.slli" severity note;
+                            if s_decCFunc4(0) = '0' then
+                                v_ALUOperator := SLL_OPERATOR;
+                                v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                v_Immediate := s_extCiImmediate;
+                                v_RD := s_decCRD_RS1;
+                                v_RS1 := s_decCRD_RS1;
+                                v_RegisterFileWriteEnable := '1';
+                                v_RegisterSource := RFSOURCE_FROMALU;
+                                if ENABLE_DEBUG then
+                                    report "c.slli" severity note;
+                                end if;
+
+                            else
+                                v_Break := '1';
+                                if ENABLE_DEBUG then
+                                    report "c.slli (Illegal Instruction with funct4[0] != 0)" severity note;
+                                end if;
+
                             end if;
 
                         when 3b"001" =>
@@ -778,6 +810,7 @@ begin
                                 v_RS1 := 5b"00010"; -- stack pointer
                                 v_RD := s_decCRD_RS1;
                                 v_MemoryWidth := WORD_TYPE;
+                                v_IsSignExtend := '0'; -- zero-extend
                                 if ENABLE_DEBUG then
                                     report "c.lwsp" severity note;
                                 end if;
@@ -865,7 +898,7 @@ begin
                                             v_RegisterSource := RFSOURCE_FROMNEXTIP;
                                             v_BranchMode := BRANCHMODE_JALR;
                                             v_RS1 := s_decCRD_RS1;
-                                            v_RD := s_decCRD_RS1; -- link address
+                                            v_RD := 5b"00001"; -- hardwired link address
                                             v_Immediate := 32x"0";
                                             if ENABLE_DEBUG then
                                                 report "c.jalr" severity note;
@@ -916,6 +949,7 @@ begin
 
                         when 3b"110" =>
                             -- c.swsp
+                            -- TODO:
                             null;
 
                         when 3b"111" =>
@@ -1707,6 +1741,7 @@ begin
             v_Immediate                     := 32x"0";
             v_BranchMode                    := BRANCHMODE_JAL_OR_BCC;
             v_IPToALU                       := '0';
+            v_RS1ToMemoryAddress            := '0';
             v_PendingMemoryOperationsThread := (others => '0');
             v_StallThread                   := (others => '0');
             v_AtomicSequesterThread         := (others => '0');
@@ -1731,6 +1766,7 @@ begin
         o_Immediate                     <= v_Immediate;
         o_BranchMode                    <= v_BranchMode;
         o_IPToALU                       <= v_IPToALU;
+        o_RS1ToMemoryAddress            <= v_RS1ToMemoryAddress;
         o_PendingMemoryOperationsThread <= v_PendingMemoryOperationsThread;
         o_StallThread                   <= v_StallThread;
         o_AtomicSequesterThread         <= v_AtomicSequesterThread;
