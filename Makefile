@@ -26,6 +26,9 @@ RARS_HEX ?= HexText
 SIM_TIMEOUT ?= 30
 MAX_MISMATCHES ?= 2
 
+# Legacy compatibility option. leave false for best simulation accuracy
+DEDUP_GHDL_WRITES ?= 1
+
 # Spike emulation settings
 SPIKE_ISA ?= rv32imac
 EMU_MARCH ?= rv32imac
@@ -211,6 +214,7 @@ emulate:
 		--spike-log "$(SPIKE_LOG_MODE)" \
 		--spike-mem "$(SPIKE_MEM_LAYOUT)" \
 		$(if $(strip $(SPIKE_INSTRUCTIONS)),--spike-instructions "$(SPIKE_INSTRUCTIONS)",) \
+		$(if $(filter 1,$(DEDUP_GHDL_WRITES)),--dedup-ghdl-writes,) \
 		--asm "$(ASM)" \
 		--elf "$(BINARY_DIR)/$(basename $(notdir $(ASM))).elf" \
 		--trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).spike.trace" \

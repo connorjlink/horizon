@@ -275,6 +275,7 @@ class TraceComparer:
         ghdl_file: str,
         rars_file: str,
         max_mismatches: int = 2,
+        dedup_ghdl_writes: bool = False,
         output_handler: Callable[[str], None] = lambda s: None,
     ):
         self.ghdl_reader = GHDLReader(ghdl_file)
@@ -282,6 +283,7 @@ class TraceComparer:
         self.ghdl_path = ghdl_file
         self.rars_path = rars_file
         self.max_mismatches = max_mismatches
+        self.dedup_ghdl_writes = dedup_ghdl_writes
         self.outfunc = output_handler
         self.mismatches = 0
         self.instruction_number = 1
@@ -359,7 +361,7 @@ class TraceComparer:
                     self.print_error(ghdl_cycle, rars_instruction, rars_action.group() if rars_action else "(no write)", ghdl_action.group() if ghdl_action else "(no write)", "Missing write")
                     break
 
-                if last_ghdl_action and ghdl_cycle:
+                if self.dedup_ghdl_writes and last_ghdl_action and ghdl_cycle:
                     try:
                         current_cycle_num = int(ghdl_cycle.group("cycle"))
                     except (TypeError, ValueError):
@@ -501,6 +503,21 @@ def compare_traces(ghdl_trace: str, rars_trace: str, max_mismatches: int = 2) ->
     dc = TraceComparer(ghdl_trace, rars_trace, max_mismatches=max_mismatches)
     return dc.compare()
 
+
+def compare_traces_with_options(
+    ghdl_trace: str,
+    rars_trace: str,
+    max_mismatches: int = 2,
+    dedup_ghdl_writes: bool = False,
+) -> CompareResult:
+    dc = TraceComparer(
+        ghdl_trace,
+        rars_trace,
+        max_mismatches=max_mismatches,
+        dedup_ghdl_writes=dedup_ghdl_writes,
+    )
+    return dc.compare()
+
 def find_rars_errors(output: str) -> list[str]:
     errors: list[str] = []
     for error in output.splitlines():
@@ -592,6 +609,14 @@ def main() -> int:
     p.add_argument("--ghdl-trace", help="Path to the GHDL trace to compare against RARS")
     p.add_argument("--compare", action="store_true", help="Compare --ghdl-trace vs --trace after running RARS")
     p.add_argument("--max-mismatches", type=int, default=2, help="Max mismatches before failing comparison")
+    p.add_argument(
+        "--dedup-ghdl-writes",
+        action="store_true",
+        help=(
+            "Enable a compatibility filter that drops back-to-back identical GHDL writes (cycle N and N+1). "
+            "Disabled by default; use this when the DUT repeats the same WB for multiple cycles."
+        ),
+    )
     p.add_argument("--summary", action="store_true", help="Print a compact one-line summary")
 
     arguments = p.parse_args()
@@ -780,10 +805,11 @@ def main() -> int:
             f'Trace did not contain expected stop marker (tb should write "Execution stopped at cycle ..."): {ghdl_trace}'
         ]
 
-    comparison = compare_traces(
+    comparison = compare_traces_with_options(
         ghdl_trace=str(ghdl_trace),
         rars_trace=str(trace),
         max_mismatches=arguments.max_mismatches,
+        dedup_ghdl_writes=arguments.dedup_ghdl_writes,
     )
 
     summary.compare_success = comparison.success
