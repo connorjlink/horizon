@@ -15,6 +15,8 @@
 # t1 = x6
 # t2 = x7
 
+.option norvc
+
 .data
 fibs: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 size: .word 19

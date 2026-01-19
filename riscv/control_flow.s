@@ -6,11 +6,12 @@
 # t3 contains whether or not the program was successful
 # t4 contains the test number to diagnose failures easily
 
+.option norvc
+
 .text
 _start:
-    # since RV32I doesn't really mandate a specific stack pointer base, we'll use what RARS uses :)
-    li sp, 0x7FFFEFFC # 7ffff137 ; lui x2, $7ffff
-                      # ffc10113 ; addi x2, x2, $fffffffc
+    # Set stack pointer to the top of the data memor
+    li sp, 0x10010FFC
 
     # Test 1.) depth = 0
     li t4, 1

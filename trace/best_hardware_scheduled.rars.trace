@@ -1,3 +1,5 @@
+Warning in C:\Users\Connor\Desktop\horizon\riscv\best_hardware_scheduled.s line 6 column 1: RARS does not recognize the .option directive.  Ignored.
+
 [inst #1] addi x5,x0,1
 Register Write to Reg: 0x05 Val: 0x00000001
 [inst #2] addi x6,x5,1

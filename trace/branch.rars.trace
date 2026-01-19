@@ -1,3 +1,5 @@
+Warning in C:\Users\Connor\Desktop\horizon\riscv\branch.s line 3 column 1: RARS does not recognize the .option directive.  Ignored.
+
 [inst #1] ori x1,x0,291
 Register Write to Reg: 0x01 Val: 0x00000123
 [inst #2] jal x0,8

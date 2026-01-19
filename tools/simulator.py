@@ -5,13 +5,15 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 import re
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
+import os
+import shlex
 
-RARS_FIRSTLINE_RE = re.compile(r"[0-9]*\[inst #(?P<num>[0-9]+)\] (?P<instr>[0-9$a-z ,\-\(\)]+)")
+# NOTE: this regex is used for RARS traces and for Spike traces
+RARS_FIRSTLINE_RE = re.compile(r"^\s*[0-9]*\s*\[inst #(?P<num>\d+)\]\s+(?P<instr>.+?)\s*$")
 GHDL_FIRSTLINE_RE = re.compile(r"In clock cycle: (?P<cycle>[0-9]+)")
 
 REGISTER_WRITE_RE = re.compile(r"Register Write to Reg: (?P<reg>[0-9A-Fa-fxX]+) Val: (?P<val>[0-9A-Fa-fxX]+)")
@@ -21,6 +23,113 @@ NOP_RE = re.compile(r"Register Write to Reg: 0x00.*")
 
 RARS_DONE_RE = re.compile(r"\[inst #(?P<inst>\d+)\] halt")
 GHDL_DONE_RE = re.compile(r"Execution stopped at cycle (?P<cycle>[0-9]+)")
+
+SPIKE_INST_RE = re.compile(
+    r"^\s*core\s+\d+:\s+(?P<pc>0x[0-9A-Fa-f]+)\s+\((?P<bits>(?:0x)?[0-9A-Fa-f]+)\)\s+(?P<asm>.+?)\s*$"
+)
+SPIKE_REG_WRITE_RE = re.compile(r"^\s*x\s*(?P<reg>\d+)\s+(?P<val>0x[0-9A-Fa-f]+)\s*$")
+SPIKE_REG_WRITE2_RE = re.compile(r"^\s*x(?P<reg>\d+)\s+(?P<val>0x[0-9A-Fa-f]+)\s*$")
+SPIKE_MEM_WRITE_RE = re.compile(r"^\s*mem\s+(?P<addr>0x[0-9A-Fa-f]+)\s+(?P<val>0x[0-9A-Fa-f]+).*$")
+SPIKE_MEM_WRITE2_RE = re.compile(r"^\s*mem\[(?P<addr>0x[0-9A-Fa-f]+)\]\s*=\s*(?P<val>0x[0-9A-Fa-f]+).*$")
+
+
+def _parse_hex_int(s: str) -> Optional[int]:
+    try:
+        s = s.strip()
+        if s.lower().startswith("0x"):
+            s = s[2:]
+        if not s:
+            return None
+        return int(s, 16)
+    except ValueError:
+        return None
+
+
+def _sanitize_disasm(s: str) -> str:
+    s = s.strip().lower()
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"[^0-9a-z\$\._: ,\+\-\(\)]", "", s)
+    return s
+
+
+def normalize_spike_commit_log(output: str) -> str:
+    out_lines: list[str] = []
+
+    inst_num = 0
+    pending_mem: Optional[str] = None
+    pending_reg: Optional[str] = None
+
+    def flush_pending() -> None:
+        nonlocal pending_mem, pending_reg
+        if pending_mem is not None:
+            out_lines.append(pending_mem)
+        elif pending_reg is not None:
+            out_lines.append(pending_reg)
+        pending_mem = None
+        pending_reg = None
+
+    for raw_line in output.splitlines():
+        line = raw_line.rstrip("\r\n")
+        m_inst = SPIKE_INST_RE.match(line)
+        if m_inst:
+            flush_pending()
+            inst_num += 1
+            asm = _sanitize_disasm(m_inst.group("asm"))
+            out_lines.append(f"[inst #{inst_num}] {asm}")
+            continue
+
+        m_mem = SPIKE_MEM_WRITE_RE.match(line) or SPIKE_MEM_WRITE2_RE.match(line)
+        if m_mem:
+            addr_i = _parse_hex_int(m_mem.group("addr"))
+            val_i = _parse_hex_int(m_mem.group("val"))
+            if addr_i is None or val_i is None:
+                continue
+            addr_i &= 0xFFFFFFFF
+            val_i &= 0xFFFFFFFF
+            pending_mem = f"Memory Write to Addr: 0x{addr_i:08X} Val: 0x{val_i:08X}"
+            continue
+
+        m_reg = SPIKE_REG_WRITE_RE.match(line) or SPIKE_REG_WRITE2_RE.match(line)
+        if m_reg:
+            reg_i = int(m_reg.group("reg"))
+            val_i = _parse_hex_int(m_reg.group("val"))
+            if val_i is None:
+                continue
+            val_i &= 0xFFFFFFFF
+            pending_reg = f"Register Write to Reg: 0x{reg_i:02X} Val: 0x{val_i:08X}"
+            continue
+
+    flush_pending()
+    return "\n".join(out_lines) + ("\n" if out_lines else "")
+
+
+def strip_spike_reset_trampoline(trace_text: str) -> str:
+    # Remove Spike's deterministic reset trampoline before jumping to the ELF entrypoint
+
+    lines = trace_text.splitlines(keepends=True)
+
+    i = 0
+    while i < len(lines) and not RARS_FIRSTLINE_RE.match(lines[i]):
+        i += 1
+
+    mnemonics: list[str] = []
+    inst_line_indexes: list[int] = []
+
+    j = i
+    while j < len(lines) and len(mnemonics) < 5:
+        m = RARS_FIRSTLINE_RE.match(lines[j])
+        if m:
+            inst_line_indexes.append(j)
+            instr = (m.group("instr") or "").strip()
+            mnemonic = instr.split()[0].lower() if instr else ""
+            mnemonics.append(mnemonic)
+        j += 1
+
+    if mnemonics != ["auipc", "addi", "csrr", "lw", "jr"]:
+        return trace_text
+
+    cut_from = inst_line_indexes[4] + 1
+    return "".join(lines[cut_from:])
 
 @dataclass
 class CompareResult:
@@ -135,6 +244,31 @@ class RARSReader:
     def close(self):
         self.stream.close()
 
+
+def actions_equivalent(a: Optional[re.Match], b: Optional[re.Match]) -> bool:
+    if (a is None) or (b is None):
+        return False
+
+    if (a.re == REGISTER_WRITE_RE) and (b.re == REGISTER_WRITE_RE):
+        reg_a = _parse_hex_int(a.group("reg"))
+        reg_b = _parse_hex_int(b.group("reg"))
+        val_a = _parse_hex_int(a.group("val"))
+        val_b = _parse_hex_int(b.group("val"))
+        if None in (reg_a, reg_b, val_a, val_b):
+            return a.group() == b.group()
+        return (reg_a & 0xFFFFFFFF) == (reg_b & 0xFFFFFFFF) and (val_a & 0xFFFFFFFF) == (val_b & 0xFFFFFFFF)
+
+    if (a.re == MEMORY_WRITE_RE) and (b.re == MEMORY_WRITE_RE):
+        addr_a = _parse_hex_int(a.group("addr"))
+        addr_b = _parse_hex_int(b.group("addr"))
+        val_a = _parse_hex_int(a.group("val"))
+        val_b = _parse_hex_int(b.group("val"))
+        if None in (addr_a, addr_b, val_a, val_b):
+            return a.group() == b.group()
+        return (addr_a & 0xFFFFFFFF) == (addr_b & 0xFFFFFFFF) and (val_a & 0xFFFFFFFF) == (val_b & 0xFFFFFFFF)
+
+    return a.group() == b.group()
+
 class TraceComparer:
     def __init__(
         self,
@@ -171,7 +305,7 @@ class TraceComparer:
             instruction = "n/a"
 
         self._emit(f"Cycle: {cycle_number}")
-        self._emit(f"RARS instruction number: {instruction_number}    Instruction: {instruction}")
+        self._emit(f"Reference instruction number: {instruction_number}    Instruction: {instruction}")
         self._emit(f"Expected: {expected}")
         self._emit(f"Got     : {actual}")
         if description:
@@ -179,6 +313,9 @@ class TraceComparer:
         self._emit("")
 
     def compare(self) -> CompareResult:
+        last_ghdl_action: Optional[re.Match] = None
+        last_ghdl_cycle_num: Optional[int] = None
+
         while self.mismatches < self.max_mismatches:
             (rars_instruction, rars_action) = self.rars_reader.read_next()
             (ghdl_cycle, ghdl_action) = self.ghdl_reader.read_next()
@@ -222,14 +359,37 @@ class TraceComparer:
                     self.print_error(ghdl_cycle, rars_instruction, rars_action.group() if rars_action else "(no write)", ghdl_action.group() if ghdl_action else "(no write)", "Missing write")
                     break
 
+                if last_ghdl_action and ghdl_cycle:
+                    try:
+                        current_cycle_num = int(ghdl_cycle.group("cycle"))
+                    except (TypeError, ValueError):
+                        current_cycle_num = None
+                    if (
+                        current_cycle_num is not None
+                        and last_ghdl_cycle_num is not None
+                        and current_cycle_num == (last_ghdl_cycle_num + 1)
+                        and actions_equivalent(ghdl_action, last_ghdl_action)
+                    ):
+                        ghdl_cycle, ghdl_action = self.ghdl_reader.read_next()
+                        continue
+
                 # NOTE: probably safe to remove this overflow-related logic
                 #if (rars_action.group() == ghdl_action.group()):
                 #    continue
 
-                if rars_action.group() == ghdl_action.group():
+                if actions_equivalent(rars_action, ghdl_action):
                     if NOP_RE.search(ghdl_action.group()):
                         ghdl_cycle, ghdl_action = self.ghdl_reader.read_next()
                         continue
+
+                    if ghdl_cycle:
+                        try:
+                            last_ghdl_cycle_num = int(ghdl_cycle.group("cycle"))
+                        except (TypeError, ValueError):
+                            last_ghdl_cycle_num = None
+                    else:
+                        last_ghdl_cycle_num = None
+                    last_ghdl_action = ghdl_action
                     break
 
                 if NOP_RE.search(ghdl_action.group()):
@@ -272,6 +432,8 @@ class TraceComparer:
 class SimulationSummary:
     assembly_file: Path
 
+    engine: str = "RARS"
+
     rars_success: bool = False
     ghdl_success: bool = False
     compare_success: bool = False
@@ -286,7 +448,7 @@ class SimulationSummary:
 class SimulationSummarizer:
     def __init__(self):
         print()
-        print("     Assembly Source File     |  RARS  |  GHDL  | Compare |  CPI  |")
+        print("     Assembly Source File     | Golden |  GHDL  | Compare |  CPI  |")
         print("------------------------------+--------+--------+---------+-------+")
 
     def print(self, summary: SimulationSummary) -> None:
@@ -294,22 +456,25 @@ class SimulationSummarizer:
             if success is None:
                 return " --- "
             return "pass" if success else "fail"
+        
+        if summary.engine == "spike":
+            summary.instruction_count = summary.instruction_count - 4
 
         cycles_per_instruction: Optional[float] = None
         if summary.instruction_count and summary.cycle_count:
             cycles_per_instruction = summary.cycle_count / summary.instruction_count
 
-        cycles_per_instruction_string = " n/a  |" if cycles_per_instruction is None else f"{cycles_per_instruction:5.02f}"
+        cycles_per_instruction_string = " n/a" if cycles_per_instruction is None else f"{cycles_per_instruction:4.02f}"
 
         assembly = str(summary.assembly_file)[-28:]
-        print(f" {assembly:28} | {format_result(summary.rars_success):6} | {format_result(summary.ghdl_success):6} | {format_result(summary.compare_success):7} | {cycles_per_instruction_string:5}")
+        print(f" {assembly:28} | {format_result(summary.rars_success):6} | {format_result(summary.ghdl_success):6} | {format_result(summary.compare_success):7} | {cycles_per_instruction_string}  |")
 
         print("------------------------------+--------+--------+---------+-------+")
 
         print(f"Testing file: {summary.assembly_file}")
-        print(f"RARS: {format_result(summary.rars_success)}")
+        print(f"{summary.engine}: {format_result(summary.rars_success)}")
         if not summary.rars_success and summary.rars_errors:
-            print("RARS errors:")
+            print(f"{summary.engine} errors:")
             for e in summary.rars_errors:
                 print(e)
 
@@ -370,6 +535,50 @@ def main() -> int:
     p.add_argument("--jar", required=True, help="Path to rars.jar")
 
     p.add_argument(
+        "--engine",
+        choices=["RARS", "spike"],
+        default="RARS",
+        help='Reference engine for generating the comparison trace (default: "RARS")',
+    )
+    p.add_argument("--elf", help="Path to RV32 ELF to run under Spike (required for --engine spike)")
+    p.add_argument(
+        "--spike-cmd",
+        default=None,
+        help='Spike command to run. On Windows you typically want "wsl spike"; on POSIX just "spike".',
+    )
+    p.add_argument("--spike-isa", default="rv32imac_zicsr", help="ISA string passed to spike --isa=...")
+    p.add_argument(
+        "--spike-log",
+        choices=["log-custom-trace", "log-commits"],
+        default="log-custom-trace",
+        help=(
+            "Spike logging mode. 'log-custom-trace' expects output lines like '[inst #..]' plus the "
+            "existing 'Register Write...'/'Memory Write...' lines. 'log-commits' uses upstream "
+            "Spike '-l --log-commits' and will be normalized."
+        ),
+    )
+    p.add_argument(
+        "--spike-mem",
+        default=None,
+        help=(
+            "Spike memory layout for -m<layout>, e.g. "
+            '"0x00400000:0x01000000,0x10010000:0x01000000". '
+            "Needed when your ELF uses non-default physical addresses."
+        ),
+    )
+    p.add_argument(
+        "--spike-instructions",
+        type=int,
+        default=None,
+        help="If set, pass --instructions=<n> to Spike to stop after n instructions (useful if your program ends in a trap loop).",
+    )
+    p.add_argument(
+        "--print-cmd",
+        action="store_true",
+        help="Print the exact reference-engine command before running it (useful for debugging Spike/WSL).",
+    )
+
+    p.add_argument(
         "--assembly",
         "--asm",
         dest="assembly",
@@ -397,57 +606,164 @@ def main() -> int:
         ghdl_errors=[],
         compare_messages=[],
     )
+    summary.engine = arguments.engine
 
-    if not jar.is_file():
-        print(f'Error: RARS jar not found: "{jar}"', file=sys.stderr)
-        return 3
+    if arguments.engine == "RARS":
+        if not jar.is_file():
+            print(f'Error: RARS jar not found: "{jar}"', file=sys.stderr)
+            return 3
     if not assembly.is_file():
         print(f'Error: assembly file not found: "{assembly}"', file=sys.stderr)
         return 3
 
     trace.parent.mkdir(parents=True, exist_ok=True)
 
-    command = [arguments.java, "-jar", str(jar), "nc", str(assembly)]
+    def run_and_capture(cmd: list[str], timeout_s: int) -> tuple[bool, int, str]:
+        try:
+            proc = subprocess.run(
+                cmd,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=timeout_s,
+            )
+            return (False, proc.returncode, proc.stdout or "")
+        except FileNotFoundError:
+            exe = cmd[0] if cmd else "(empty command)"
+            return (False, 127, f"[error] Command not found: {exe}\n")
+        except OSError as e:
+            exe = cmd[0] if cmd else "(empty command)"
+            return (False, 127, f"[error] Failed to run {exe}: {e}\n")
+        except subprocess.TimeoutExpired as e:
+            out = e.output
+            if isinstance(out, bytes):
+                out_s = out.decode(errors="replace")
+            else:
+                out_s = out or ""
+            return (True, 124, out_s)
 
-    is_timed_out = False
-    try:
-        command_process = subprocess.run(
-            command,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=arguments.timeout,
-        )
-        output = command_process.stdout or ""
-    except subprocess.TimeoutExpired as e:
-        is_timed_out = True
-        output = e.output
-        if isinstance(output, bytes):
-            output = output.decode(errors="replace")
-        else:
-            output = output or ""
-        output += f"\n[timeout] RARS exceeded {arguments.timeout}s\n"
-
-    trace.write_text(output, encoding="utf-8", errors="replace")
-
-    errors = find_rars_errors(output)
-    summary.rars_errors = errors
-    summary.rars_success = True
     summarizer = SimulationSummarizer()
 
-    if is_timed_out:
-        print(f"RARS timed output after {arguments.timeout}s. Trace: {trace}", file=sys.stderr)
-        summary.rars_success = False
-        summarizer.print(summary)
-        return 1
+    if arguments.engine == "RARS":
+        command = [arguments.java, "-jar", str(jar), "nc", str(assembly)]
+        is_timed_out, return_code, output = run_and_capture(command, arguments.timeout)
+        if is_timed_out:
+            output += f"\n[timeout] RARS exceeded {arguments.timeout}s\n"
 
-    if errors:
-        print(f"RARS reported {len(errors)} error(s). Trace: {trace}", file=sys.stderr)
-        for error in errors:
-            print(error, file=sys.stderr)
-        summary.rars_success = False
-        summarizer.print(summary)
-        return 1
+        trace.write_text(output, encoding="utf-8", errors="replace")
+
+        errors = find_rars_errors(output)
+        summary.rars_errors = errors
+        summary.rars_success = True
+
+        if is_timed_out:
+            print(f"RARS timed output after {arguments.timeout}s. Trace: {trace}", file=sys.stderr)
+            summary.rars_success = False
+            summarizer.print(summary)
+            return 1
+
+        if errors:
+            print(f"RARS reported {len(errors)} error(s). Trace: {trace}", file=sys.stderr)
+            for error in errors:
+                print(error, file=sys.stderr)
+            summary.rars_success = False
+            summarizer.print(summary)
+            return 1
+
+    else:
+        if not arguments.elf:
+            print("Error: --engine spike requires --elf", file=sys.stderr)
+            return 3
+
+        elf_path = Path(arguments.elf).expanduser()
+        if not elf_path.is_file():
+            print(f'Error: ELF file not found: "{elf_path}"', file=sys.stderr)
+            return 3
+
+        spike_cmd_str = arguments.spike_cmd
+        if spike_cmd_str is None:
+            spike_cmd_str = "wsl spike" if os.name == "nt" else "spike"
+
+        spike_cmd = shlex.split(spike_cmd_str, posix=(os.name != "nt"))
+        if not spike_cmd:
+            print("Error: invalid --spike-cmd", file=sys.stderr)
+            return 3
+
+        # Use an absolute Windows path so wslpath produces a correct /mnt/... path.
+        elf_arg = str(elf_path.resolve())
+        if os.name == "nt" and spike_cmd[0].lower() == "wsl":
+            # Convert Windows path to /mnt/<drive>/... for the Linux-side Spike.
+            try:
+                # wslpath tends to behave better with forward slashes.
+                win_for_wslpath = elf_arg.replace("\\", "/")
+                p_conv = subprocess.run(
+                    ["wsl", "wslpath", "-u", win_for_wslpath],
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    timeout=10,
+                )
+                converted = (p_conv.stdout or "").strip()
+                if p_conv.returncode == 0 and converted.startswith("/"):
+                    elf_arg = converted
+                else:
+                    # Fallback: manual conversion C:\foo\bar -> /mnt/c/foo/bar
+                    m_drive = re.match(r"^(?P<drive>[A-Za-z]):[\\/](?P<rest>.*)$", elf_arg)
+                    if m_drive:
+                        drive = m_drive.group("drive").lower()
+                        rest = m_drive.group("rest").replace("\\", "/")
+                        elf_arg = f"/mnt/{drive}/{rest}"
+            except OSError:
+                pass
+
+        if arguments.spike_log == "log-commits":
+            log_args = ["-l", "--log-commits"]
+        else:
+            log_args = ["--log-custom-trace"]
+
+        instructions_arg = [f"--instructions={arguments.spike_instructions}"] if arguments.spike_instructions else []
+        mem_arg = [f"-m{arguments.spike_mem}"] if arguments.spike_mem else []
+
+        command = [
+            *spike_cmd,
+            f"--isa={arguments.spike_isa}",
+            *log_args,
+            *mem_arg,
+            *instructions_arg,
+            elf_arg,
+        ]
+
+        if arguments.print_cmd:
+            print("Spike command:")
+            print("  " + " ".join(shlex.quote(part) for part in command))
+
+        is_timed_out, return_code, output = run_and_capture(command, arguments.timeout)
+        if is_timed_out:
+            output += f"\n[timeout] Spike exceeded {arguments.timeout}s\n"
+
+        trace_text = output
+        if arguments.spike_log == "log-commits":
+            trace_text = normalize_spike_commit_log(output)
+        else:
+            trace_text = strip_spike_reset_trampoline(trace_text)
+
+        trace.write_text(trace_text, encoding="utf-8", errors="replace")
+
+        has_trace = "[inst #" in trace_text
+        summary.rars_success = (not is_timed_out) and has_trace
+        summary.rars_errors = []
+        if is_timed_out:
+            summary.rars_errors.append(f"Spike timed out after {arguments.timeout}s")
+        if return_code != 0:
+            summary.rars_errors.append(f"Spike exited with code {return_code}")
+            if output.strip().startswith("[error]"):
+                summary.rars_errors.append(output.strip())
+        if not has_trace:
+            summary.rars_errors.append("Spike produced no usable trace output")
+
+        if not summary.rars_success:
+            summarizer.print(summary)
+            return 1
     
     if not arguments.ghdl_trace:
         print("Error: --compare requires --ghdl-trace", file=sys.stderr)

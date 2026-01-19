@@ -19,5 +19,11 @@ Register Write to Reg: 0x03 Val: 0x00000123
 In clock cycle: 16
 Register Write to Reg: 0x00 Val: 0x00400038
 In clock cycle: 18
+Register Write to Reg: 0x04 Val: 0x00000123
+In clock cycle: 20
+Register Write to Reg: 0x05 Val: 0x00000123
+In clock cycle: 21
+Register Write to Reg: 0x00 Val: 0x0040002C
+In clock cycle: 23
 Register Write to Reg: 0x00 Val: 0x00000000
-Execution stopped at cycle 19
+Execution stopped at cycle 24

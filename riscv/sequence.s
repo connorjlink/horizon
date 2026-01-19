@@ -1,12 +1,10 @@
-#
 # First part of the Lab 3 test program
 # (c) 2025 Dr. Henry Duwe, Iowa State University
-#
 
-# data section
+.option norvc
+
 .data
 
-# code/instruction section
 .text
 addi  x1,  x0,  1    # Place 1  in $1
 addi  x2,  x0,  2    # Place 2  in $2

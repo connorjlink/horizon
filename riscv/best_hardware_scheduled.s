@@ -3,6 +3,8 @@
 ## best_hardware_scheduled.s
 ###############################
 
+.option norvc
+
 .text
 start:
     addi t0, x0, 1

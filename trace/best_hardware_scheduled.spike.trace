@@ -1,0 +1,30 @@
+[inst #6] li      t0,1
+Register Write to Reg: 0x05 Val: 0x00000001
+[inst #7] addi    t1,t0,1
+Register Write to Reg: 0x06 Val: 0x00000002
+[inst #8] addi    t2,t1,1
+Register Write to Reg: 0x07 Val: 0x00000003
+[inst #9] addi    t3,t2,1
+Register Write to Reg: 0x1c Val: 0x00000004
+[inst #10] addi    t4,t3,1
+Register Write to Reg: 0x1d Val: 0x00000005
+[inst #11] addi    t5,t4,1
+Register Write to Reg: 0x1e Val: 0x00000006
+[inst #12] addi    t6,t5,1
+Register Write to Reg: 0x1f Val: 0x00000007
+[inst #13] addi    a0,t6,1
+Register Write to Reg: 0x0a Val: 0x00000008
+[inst #14] addi    a1,a0,1
+Register Write to Reg: 0x0b Val: 0x00000009
+[inst #15] addi    a2,a1,1
+Register Write to Reg: 0x0c Val: 0x0000000a
+[inst #16] addi    a3,a2,1
+Register Write to Reg: 0x0d Val: 0x0000000b
+[inst #17] addi    a4,a3,1
+Register Write to Reg: 0x0e Val: 0x0000000c
+[inst #18] addi    a5,a4,1
+Register Write to Reg: 0x0f Val: 0x0000000d
+[inst #19] addi    a6,a5,1
+Register Write to Reg: 0x10 Val: 0x0000000e
+[inst #20] addi    a7,a6,1
+Register Write to Reg: 0x11 Val: 0x0000000f

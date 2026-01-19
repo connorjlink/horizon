@@ -1,0 +1,121 @@
+[inst #6] lui     sp,0x10011
+Register Write to Reg: 0x02 Val: 0x10011000
+[inst #7] addi    sp,sp,-4
+Register Write to Reg: 0x02 Val: 0x10010ffc
+[inst #8] li      t4,1
+Register Write to Reg: 0x1d Val: 0x00000001
+[inst #9] jal     pc + 0x8
+Register Write to Reg: 0x01 Val: 0x00400010
+[inst #10] addi    sp,sp,-16
+Register Write to Reg: 0x02 Val: 0x10010fec
+[inst #11] sw      ra,12(sp)
+Memory Write to Addr: 0x10010ff8 Val: 0x00400010
+[inst #12] sw      s0,8(sp)
+Memory Write to Addr: 0x10010ff4 Val: 0x00000000
+[inst #13] addi    s0,sp,16
+Register Write to Reg: 0x08 Val: 0x10010ffc
+[inst #14] li      t4,2
+Register Write to Reg: 0x1d Val: 0x00000002
+[inst #15] jal     pc + 0x18
+Register Write to Reg: 0x01 Val: 0x0040002c
+[inst #16] addi    sp,sp,-16
+Register Write to Reg: 0x02 Val: 0x10010fdc
+[inst #17] sw      ra,12(sp)
+Memory Write to Addr: 0x10010fe8 Val: 0x0040002c
+[inst #18] sw      s0,8(sp)
+Memory Write to Addr: 0x10010fe4 Val: 0x10010ffc
+[inst #19] addi    s0,sp,16
+Register Write to Reg: 0x08 Val: 0x10010fec
+[inst #20] li      t4,3
+Register Write to Reg: 0x1d Val: 0x00000003
+[inst #21] jal     pc + 0x18
+Register Write to Reg: 0x01 Val: 0x00400058
+[inst #22] addi    sp,sp,-16
+Register Write to Reg: 0x02 Val: 0x10010fcc
+[inst #23] sw      ra,12(sp)
+Memory Write to Addr: 0x10010fd8 Val: 0x00400058
+[inst #24] sw      s0,8(sp)
+Memory Write to Addr: 0x10010fd4 Val: 0x10010fec
+[inst #25] addi    s0,sp,16
+Register Write to Reg: 0x08 Val: 0x10010fdc
+[inst #26] li      t4,4
+Register Write to Reg: 0x1d Val: 0x00000004
+[inst #27] jal     pc + 0x18
+Register Write to Reg: 0x01 Val: 0x00400084
+[inst #28] addi    sp,sp,-16
+Register Write to Reg: 0x02 Val: 0x10010fbc
+[inst #29] sw      ra,12(sp)
+Memory Write to Addr: 0x10010fc8 Val: 0x00400084
+[inst #30] sw      s0,8(sp)
+Memory Write to Addr: 0x10010fc4 Val: 0x10010fdc
+[inst #31] addi    s0,sp,16
+Register Write to Reg: 0x08 Val: 0x10010fcc
+[inst #32] li      t4,5
+Register Write to Reg: 0x1d Val: 0x00000005
+[inst #33] jal     pc + 0x18
+Register Write to Reg: 0x01 Val: 0x004000b0
+[inst #34] addi    sp,sp,-16
+Register Write to Reg: 0x02 Val: 0x10010fac
+[inst #35] sw      ra,12(sp)
+Memory Write to Addr: 0x10010fb8 Val: 0x004000b0
+[inst #36] sw      s0,8(sp)
+Memory Write to Addr: 0x10010fb4 Val: 0x10010fcc
+[inst #37] addi    s0,sp,16
+Register Write to Reg: 0x08 Val: 0x10010fbc
+[inst #38] li      t4,6
+Register Write to Reg: 0x1d Val: 0x00000006
+[inst #39] li      t0,5
+Register Write to Reg: 0x05 Val: 0x00000005
+[inst #40] li      t1,10
+Register Write to Reg: 0x06 Val: 0x0000000a
+[inst #41] add     a0,t0,t1
+Register Write to Reg: 0x0a Val: 0x0000000f
+[inst #42] lw      ra,12(sp)
+Register Write to Reg: 0x01 Val: 0x004000b0
+[inst #43] lw      s0,8(sp)
+Register Write to Reg: 0x08 Val: 0x10010fcc
+[inst #44] addi    sp,sp,16
+Register Write to Reg: 0x02 Val: 0x10010fbc
+[inst #45] ret
+[inst #46] addi    a0,a0,2
+Register Write to Reg: 0x0a Val: 0x00000011
+[inst #47] lw      ra,12(sp)
+Register Write to Reg: 0x01 Val: 0x00400084
+[inst #48] lw      s0,8(sp)
+Register Write to Reg: 0x08 Val: 0x10010fdc
+[inst #49] addi    sp,sp,16
+Register Write to Reg: 0x02 Val: 0x10010fcc
+[inst #50] ret
+[inst #51] slli    a0,a0,1
+Register Write to Reg: 0x0a Val: 0x00000022
+[inst #52] lw      ra,12(sp)
+Register Write to Reg: 0x01 Val: 0x00400058
+[inst #53] lw      s0,8(sp)
+Register Write to Reg: 0x08 Val: 0x10010fec
+[inst #54] addi    sp,sp,16
+Register Write to Reg: 0x02 Val: 0x10010fdc
+[inst #55] ret
+[inst #56] slti    a0,a0,34
+Register Write to Reg: 0x0a Val: 0x00000000
+[inst #57] lw      ra,12(sp)
+Register Write to Reg: 0x01 Val: 0x0040002c
+[inst #58] lw      s0,8(sp)
+Register Write to Reg: 0x08 Val: 0x10010ffc
+[inst #59] addi    sp,sp,16
+Register Write to Reg: 0x02 Val: 0x10010fec
+[inst #60] ret
+[inst #61] bnez    a0,pc + 200
+[inst #62] lw      ra,12(sp)
+Register Write to Reg: 0x01 Val: 0x00400010
+[inst #63] lw      s0,8(sp)
+Register Write to Reg: 0x08 Val: 0x00000000
+[inst #64] addi    sp,sp,16
+Register Write to Reg: 0x02 Val: 0x10010ffc
+[inst #65] ret
+[inst #66] j       pc + 0xec
+[inst #67] li      t3,0
+Register Write to Reg: 0x1c Val: 0x00000000
+[inst #68] lui     t4,0xf
+Register Write to Reg: 0x1d Val: 0x0000f000
+[inst #69] addi    t4,t4,13
+Register Write to Reg: 0x1d Val: 0x0000f00d

@@ -26,6 +26,26 @@ RARS_HEX ?= HexText
 SIM_TIMEOUT ?= 30
 MAX_MISMATCHES ?= 2
 
+# Spike emulation settings
+SPIKE_ISA ?= rv32imac
+EMU_MARCH ?= rv32imac
+EMU_MABI  ?= ilp32
+
+# Match tb_processor.vhd memory load addresses
+EMU_TEXT_ADDR ?= 0x00400000
+EMU_DATA_ADDR ?= 0x10010000
+
+# VHDL testbench uses non-physical addresses due to 
+SPIKE_MEM_LAYOUT ?= 0x00400000:0x01000000,0x10010000:0x01000000
+
+# `wsl spike` or `spike`
+SPIKE_CMD ?=
+
+# use log-custom-trace with custom Spike fork. Upstream uses: -l --log-commits and a different log format, which would require some extra adaptation
+SPIKE_LOG_MODE ?= log-custom-trace
+
+SPIKE_INSTRUCTIONS ?= 5000000
+
 GHDL_TB     ?= tb_processor
 GHDL_TB_VHD ?= ./test/tb_processor.vhd
 
@@ -108,7 +128,7 @@ GHDL_TRACEFILES := $(patsubst $(ASSEMBLY_DIR)/%.s,$(TRACE_DIR)/%.ghdl.trace,$(AS
 TB_BINARY_DIR := $(call addslash,$(BINARY_DIR))
 TB_TRACE_DIR  := $(call addslash,$(TRACE_DIR))
 
-.PHONY: setup verify tests hex sim sim_all \
+.PHONY: setup verify tests hex sim sim_all emulate \
 	test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_divider test_register_file test_control_unit test_processor
 
 setup: $(WORK_CF)
@@ -119,6 +139,8 @@ clean:
 	$(call RM,binary/*_i.hex)
 	$(call RM,binary/*_d.hex)
 	$(call RM,binary/*.o)
+	$(call RM,binary/*.elf)
+	$(call RM,binary/*.spike.ld)
 	$(call RM,trace/*.trace)
 	$(call RM,trace/*.log)
 	$(call RM,trace/*.vcd)
@@ -162,6 +184,36 @@ simulate:
 		--jar "$(RARS_JAR)" \
 		--asm "$(ASM)" \
 		--trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).rars.trace" \
+		--timeout "$(SIM_TIMEOUT)" \
+		--ghdl-trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.trace" \
+		--max-mismatches "$(MAX_MISMATCHES)" \
+		--summary
+
+emulate:
+	$(if $(strip $(ASM)),,$(error Usage: make emulate ASM=$(ASSEMBLY_DIR)/file.s [RARS_JAR=...] [SIM_TIMEOUT=...] [MAX_MISMATCHES=...] [SPIKE_CMD=...] [SPIKE_ISA=...] [EMU_TEXT_ADDR=...] [EMU_DATA_ADDR=...] [GHDL_GENERIC_ARGS=...]))
+	@$(MAKE) setup
+	@$(MAKE) "$(BINARY_DIR)/$(basename $(notdir $(ASM)))_i.hex" "$(BINARY_DIR)/$(basename $(notdir $(ASM)))_d.hex"
+	@$(MAKE) "$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.trace"
+	@$(PYTHON) tools/build_elf.py \
+		--asm "$(ASM)" \
+		--out "$(BINARY_DIR)/$(basename $(notdir $(ASM))).elf" \
+		--as "$(AS)" \
+		--ld "$(LD)" \
+		--march "$(EMU_MARCH)" \
+		--mabi "$(EMU_MABI)" \
+		--text-addr "$(EMU_TEXT_ADDR)" \
+		--data-addr "$(EMU_DATA_ADDR)"
+	@$(PYTHON) tools/simulator.py \
+		--jar "$(RARS_JAR)" \
+		--engine spike \
+		$(if $(strip $(SPIKE_CMD)),--spike-cmd "$(SPIKE_CMD)",) \
+		--spike-isa "$(SPIKE_ISA)" \
+		--spike-log "$(SPIKE_LOG_MODE)" \
+		--spike-mem "$(SPIKE_MEM_LAYOUT)" \
+		$(if $(strip $(SPIKE_INSTRUCTIONS)),--spike-instructions "$(SPIKE_INSTRUCTIONS)",) \
+		--asm "$(ASM)" \
+		--elf "$(BINARY_DIR)/$(basename $(notdir $(ASM))).elf" \
+		--trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).spike.trace" \
 		--timeout "$(SIM_TIMEOUT)" \
 		--ghdl-trace "$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.trace" \
 		--max-mismatches "$(MAX_MISMATCHES)" \

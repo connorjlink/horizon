@@ -10,6 +10,8 @@
 # x7 is the actual arithmetic result
 # x8 is the expected arithmetic result
 
+.option norvc
+
 .text
 _start:
     # Test 1.) mul: small positive

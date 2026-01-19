@@ -9,6 +9,8 @@
 # Adapted to RISC-V by Connor J. Link (3.1.2025)
 # Per testing [3, 0, 2, 1] is the expected output (matches the original grendel.s in MARS)
 
+.option norvc
+
 .data
 res:
 	.word -1-1-1-1

@@ -6,6 +6,8 @@
 # t3 is the success/failure flag
 # t4 contains the test number to diagnose failures easily
 
+.option norvc
+
 .data
 before: .word 1, 5, 4, 3, 2
 
@@ -13,9 +15,8 @@ after: .word 1, 2, 3, 4, 5
 
 .text
 _start:
-    # since RV32I doesn't really mandate a specific stack pointer base, we'll use what RARS uses :)
-    li sp, 0x7FFFEFFC  # 7ffff137
-                       # ffc10113
+    # Set stack pointer to the top of the data memor
+    li sp, 0x10010FFC
  
     # Test 1.) bubblesort N = 5, input = [1, 5, 4, 3, 2]
     li a0, 5           # 00500513

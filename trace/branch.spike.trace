@@ -1,0 +1,17 @@
+[inst #6] ori     ra,zero,291
+Register Write to Reg: 0x01 Val: 0x00000123
+[inst #7] j       pc + 0x8
+[inst #8] ori     sp,zero,291
+Register Write to Reg: 0x02 Val: 0x00000123
+[inst #9] beq     ra,sp,pc + 8
+[inst #10] jal     pc + 0x18
+Register Write to Reg: 0x01 Val: 0x0040001c
+[inst #11] ori     gp,zero,291
+Register Write to Reg: 0x03 Val: 0x00000123
+[inst #12] ret
+[inst #13] ori     tp,zero,291
+Register Write to Reg: 0x04 Val: 0x00000123
+[inst #14] beqz    ra,pc + 24
+[inst #15] ori     t0,zero,291
+Register Write to Reg: 0x05 Val: 0x00000123
+[inst #16] j       pc + 0x10

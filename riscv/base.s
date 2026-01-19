@@ -9,6 +9,8 @@
 # x7 is the actual arithmetic result
 # x8 is the expected arithmetic result
 
+.option norvc
+
 .data
 dummy: .word 0
 

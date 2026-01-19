@@ -1,5 +1,7 @@
 # (c) 2025 Dr. Henry Duwe, Iowa State University
 
+.option norvc
+
 main:
 	ori x1, x0, 0x123  # $00 : 12306093 
 	j skip             # $04 : 0080006f

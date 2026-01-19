@@ -63,6 +63,8 @@ Memory Write to Addr: 0x100100F4 Val: 0x100100F4
 Memory Write to Addr: 0x100100F8 Val: 0x100100F8
 Memory Write to Addr: 0x100100FC Val: 0x100100FC
 Memory Write to Addr: 0x10010100 Val: 0x10010100
+Warning in C:\Users\Connor\Desktop\horizon\riscv\best_single_cycle.s line 6 column 1: RARS does not recognize the .option directive.  Ignored.
+
 [inst #1] addi x5,x0,256
 Register Write to Reg: 0x05 Val: 0x00000100
 [inst #2] auipc x6,64528

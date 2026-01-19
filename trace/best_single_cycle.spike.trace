@@ -1,0 +1,332 @@
+[inst #6] li      t0,256
+Register Write to Reg: 0x05 Val: 0x00000100
+[inst #7] auipc   t1,0xfc10
+Register Write to Reg: 0x06 Val: 0x10010004
+[inst #8] addi    t1,t1,-4
+Register Write to Reg: 0x06 Val: 0x10010000
+[inst #9] auipc   t2,0xfc10
+Register Write to Reg: 0x07 Val: 0x1001000c
+[inst #10] addi    t2,t2,-12
+Register Write to Reg: 0x07 Val: 0x10010000
+[inst #11] add     t2,t2,t0
+Register Write to Reg: 0x07 Val: 0x10010100
+[inst #12] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010004
+[inst #13] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010004
+[inst #14] blt     t1,t2,pc - 8
+[inst #15] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010008
+[inst #16] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010008
+[inst #17] blt     t1,t2,pc - 8
+[inst #18] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001000c
+[inst #19] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001000c
+[inst #20] blt     t1,t2,pc - 8
+[inst #21] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010010
+[inst #22] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010010
+[inst #23] blt     t1,t2,pc - 8
+[inst #24] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010014
+[inst #25] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010014
+[inst #26] blt     t1,t2,pc - 8
+[inst #27] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010018
+[inst #28] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010018
+[inst #29] blt     t1,t2,pc - 8
+[inst #30] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001001c
+[inst #31] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001001c
+[inst #32] blt     t1,t2,pc - 8
+[inst #33] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010020
+[inst #34] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010020
+[inst #35] blt     t1,t2,pc - 8
+[inst #36] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010024
+[inst #37] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010024
+[inst #38] blt     t1,t2,pc - 8
+[inst #39] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010028
+[inst #40] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010028
+[inst #41] blt     t1,t2,pc - 8
+[inst #42] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001002c
+[inst #43] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001002c
+[inst #44] blt     t1,t2,pc - 8
+[inst #45] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010030
+[inst #46] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010030
+[inst #47] blt     t1,t2,pc - 8
+[inst #48] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010034
+[inst #49] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010034
+[inst #50] blt     t1,t2,pc - 8
+[inst #51] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010038
+[inst #52] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010038
+[inst #53] blt     t1,t2,pc - 8
+[inst #54] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001003c
+[inst #55] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001003c
+[inst #56] blt     t1,t2,pc - 8
+[inst #57] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010040
+[inst #58] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010040
+[inst #59] blt     t1,t2,pc - 8
+[inst #60] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010044
+[inst #61] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010044
+[inst #62] blt     t1,t2,pc - 8
+[inst #63] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010048
+[inst #64] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010048
+[inst #65] blt     t1,t2,pc - 8
+[inst #66] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001004c
+[inst #67] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001004c
+[inst #68] blt     t1,t2,pc - 8
+[inst #69] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010050
+[inst #70] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010050
+[inst #71] blt     t1,t2,pc - 8
+[inst #72] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010054
+[inst #73] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010054
+[inst #74] blt     t1,t2,pc - 8
+[inst #75] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010058
+[inst #76] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010058
+[inst #77] blt     t1,t2,pc - 8
+[inst #78] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001005c
+[inst #79] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001005c
+[inst #80] blt     t1,t2,pc - 8
+[inst #81] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010060
+[inst #82] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010060
+[inst #83] blt     t1,t2,pc - 8
+[inst #84] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010064
+[inst #85] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010064
+[inst #86] blt     t1,t2,pc - 8
+[inst #87] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010068
+[inst #88] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010068
+[inst #89] blt     t1,t2,pc - 8
+[inst #90] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001006c
+[inst #91] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001006c
+[inst #92] blt     t1,t2,pc - 8
+[inst #93] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010070
+[inst #94] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010070
+[inst #95] blt     t1,t2,pc - 8
+[inst #96] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010074
+[inst #97] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010074
+[inst #98] blt     t1,t2,pc - 8
+[inst #99] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010078
+[inst #100] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010078
+[inst #101] blt     t1,t2,pc - 8
+[inst #102] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001007c
+[inst #103] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001007c
+[inst #104] blt     t1,t2,pc - 8
+[inst #105] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010080
+[inst #106] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010080
+[inst #107] blt     t1,t2,pc - 8
+[inst #108] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010084
+[inst #109] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010084
+[inst #110] blt     t1,t2,pc - 8
+[inst #111] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010088
+[inst #112] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010088
+[inst #113] blt     t1,t2,pc - 8
+[inst #114] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001008c
+[inst #115] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001008c
+[inst #116] blt     t1,t2,pc - 8
+[inst #117] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010090
+[inst #118] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010090
+[inst #119] blt     t1,t2,pc - 8
+[inst #120] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010094
+[inst #121] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010094
+[inst #122] blt     t1,t2,pc - 8
+[inst #123] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010098
+[inst #124] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010098
+[inst #125] blt     t1,t2,pc - 8
+[inst #126] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x1001009c
+[inst #127] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x1001009c
+[inst #128] blt     t1,t2,pc - 8
+[inst #129] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100a0
+[inst #130] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100a0
+[inst #131] blt     t1,t2,pc - 8
+[inst #132] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100a4
+[inst #133] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100a4
+[inst #134] blt     t1,t2,pc - 8
+[inst #135] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100a8
+[inst #136] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100a8
+[inst #137] blt     t1,t2,pc - 8
+[inst #138] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100ac
+[inst #139] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100ac
+[inst #140] blt     t1,t2,pc - 8
+[inst #141] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100b0
+[inst #142] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100b0
+[inst #143] blt     t1,t2,pc - 8
+[inst #144] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100b4
+[inst #145] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100b4
+[inst #146] blt     t1,t2,pc - 8
+[inst #147] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100b8
+[inst #148] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100b8
+[inst #149] blt     t1,t2,pc - 8
+[inst #150] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100bc
+[inst #151] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100bc
+[inst #152] blt     t1,t2,pc - 8
+[inst #153] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100c0
+[inst #154] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100c0
+[inst #155] blt     t1,t2,pc - 8
+[inst #156] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100c4
+[inst #157] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100c4
+[inst #158] blt     t1,t2,pc - 8
+[inst #159] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100c8
+[inst #160] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100c8
+[inst #161] blt     t1,t2,pc - 8
+[inst #162] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100cc
+[inst #163] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100cc
+[inst #164] blt     t1,t2,pc - 8
+[inst #165] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100d0
+[inst #166] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100d0
+[inst #167] blt     t1,t2,pc - 8
+[inst #168] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100d4
+[inst #169] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100d4
+[inst #170] blt     t1,t2,pc - 8
+[inst #171] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100d8
+[inst #172] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100d8
+[inst #173] blt     t1,t2,pc - 8
+[inst #174] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100dc
+[inst #175] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100dc
+[inst #176] blt     t1,t2,pc - 8
+[inst #177] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100e0
+[inst #178] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100e0
+[inst #179] blt     t1,t2,pc - 8
+[inst #180] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100e4
+[inst #181] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100e4
+[inst #182] blt     t1,t2,pc - 8
+[inst #183] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100e8
+[inst #184] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100e8
+[inst #185] blt     t1,t2,pc - 8
+[inst #186] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100ec
+[inst #187] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100ec
+[inst #188] blt     t1,t2,pc - 8
+[inst #189] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100f0
+[inst #190] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100f0
+[inst #191] blt     t1,t2,pc - 8
+[inst #192] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100f4
+[inst #193] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100f4
+[inst #194] blt     t1,t2,pc - 8
+[inst #195] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100f8
+[inst #196] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100f8
+[inst #197] blt     t1,t2,pc - 8
+[inst #198] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x100100fc
+[inst #199] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x100100fc
+[inst #200] blt     t1,t2,pc - 8
+[inst #201] addi    t1,t1,4
+Register Write to Reg: 0x06 Val: 0x10010100
+[inst #202] lw      t1,0(t1)
+Register Write to Reg: 0x06 Val: 0x10010100
+[inst #203] blt     t1,t2,pc - 8

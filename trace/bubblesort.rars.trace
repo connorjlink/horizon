@@ -8,10 +8,12 @@ Memory Write to Addr: 0x10010018 Val: 0x00000002
 Memory Write to Addr: 0x1001001C Val: 0x00000003
 Memory Write to Addr: 0x10010020 Val: 0x00000004
 Memory Write to Addr: 0x10010024 Val: 0x00000005
-[inst #1] lui x2,524287
-Register Write to Reg: 0x02 Val: 0x7FFFF000
+Warning in C:\Users\Connor\Desktop\horizon\riscv\bubblesort.s line 9 column 1: RARS does not recognize the .option directive.  Ignored.
+
+[inst #1] lui x2,65553
+Register Write to Reg: 0x02 Val: 0x10011000
 [inst #2] addi x2,x2,-4
-Register Write to Reg: 0x02 Val: 0x7FFFEFFC
+Register Write to Reg: 0x02 Val: 0x10010FFC
 [inst #3] addi x10,x0,5
 Register Write to Reg: 0x0A Val: 0x00000005
 [inst #4] auipc x11,64528
@@ -21,13 +23,13 @@ Register Write to Reg: 0x0B Val: 0x10010000
 [inst #6] jal x1,60
 Register Write to Reg: 0x01 Val: 0x00400018
 [inst #7] addi x2,x2,-16
-Register Write to Reg: 0x02 Val: 0x7FFFEFEC
+Register Write to Reg: 0x02 Val: 0x10010FEC
 [inst #8] sw x1,12(x2)
-Memory Write to Addr: 0x7FFFEFF8 Val: 0x00400018
+Memory Write to Addr: 0x10010FF8 Val: 0x00400018
 [inst #9] sw x8,8(x2)
-Memory Write to Addr: 0x7FFFEFF4 Val: 0x00000000
+Memory Write to Addr: 0x10010FF4 Val: 0x00000000
 [inst #10] addi x8,x2,16
-Register Write to Reg: 0x08 Val: 0x7FFFEFFC
+Register Write to Reg: 0x08 Val: 0x10010FFC
 [inst #11] beq x10,x0,72
 [inst #12] add x5,x0,x0
 Register Write to Reg: 0x05 Val: 0x00000000
@@ -235,7 +237,7 @@ Register Write to Reg: 0x01 Val: 0x00400018
 [inst #127] lw x8,8(x2)
 Register Write to Reg: 0x08 Val: 0x00000000
 [inst #128] addi x2,x2,16
-Register Write to Reg: 0x02 Val: 0x7FFFEFFC
+Register Write to Reg: 0x02 Val: 0x10010FFC
 [inst #129] jalr x0,x1,0
 Register Write to Reg: 0x00 Val: 0x004000B8
 [inst #130] auipc x5,64528

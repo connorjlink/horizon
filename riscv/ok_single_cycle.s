@@ -3,6 +3,8 @@
 ## (c) 2026 Connor J. Link. All Rights Reserved.
 ###############################
 
+.option norvc
+
 .data
 before: .word 0
 
