@@ -13,7 +13,10 @@
 
 .data
 res:
-	.word -1-1-1-1
+        .word -1
+        .word -1
+        .word -1
+        .word -1
 nodes:
         .byte   97 # a
         .byte   98 # b
@@ -25,19 +28,22 @@ adjacencymatrix:
         .word   0
         .word   3
 visited:
-	.byte 0 0 0 0
+        .byte 0
+        .byte 0
+        .byte 0
+        .byte 0
 res_idx:
         .word   3
 .text
         # NEW RISCV                # ORIGINAL MIPS
-	li   sp, 0x10011000        # li $sp, 0x10011000
-	li   fp, 0                 # li $fp, 0
-	la   ra, pump              # la $ra pump
-	j    main
+        li   sp, 0x10010FFC        # li $sp, 0x10011000
+        li   fp, 0                 # li $fp, 0
+        la   ra, pump              # la $ra pump
+        j    main
 pump:
         j end
         # NOTE: had to change this to pause at the end because RARS had an infinite loop for some reason here
-	ebreak                     # halt
+        ebreak                     # halt
 
 
 main:
@@ -123,8 +129,8 @@ turkey:
         j    interest
 telling:
         # NOTE: $v0 === $2
-	la   t2,    res_idx        # la      $v0, res_idx
-	lw   t2,  0(t2)            # lw      $v0, 0($v0)
+        la   t2,    res_idx        # la      $v0, res_idx
+        lw   t2,  0(t2)            # lw      $v0, 0($v0)
         addi t4,    t2, -1         # addiu   $4,$2,-1
         la   t3,    res_idx        # la      $3, res_idx
         sw   t4,  0(t3)            # sw      $4, 0($3)
@@ -137,7 +143,7 @@ telling:
         srai t3,    t3, 1          # sra     $3,$3,1
         slli t3,    t3, 2          # sll     $3,$3,2
        
-       	xor  t6,    ra, t2         # xor     $at, $ra, $2 # does nothing 
+               xor  t6,    ra, t2         # xor     $at, $ra, $2 # does nothing 
         or   t6,    ra, t2         # nor     $at, $ra, $2 # does nothing 
         neg  t6,    t6
         
@@ -315,7 +321,7 @@ recast:
         j    example
 pat:
 
-       	la   t2, visited             # la      $2, visited
+               la   t2, visited             # la      $2, visited
         sw   t2, 16(fp)              # 00742823 # sw      $2,16($fp)
         lw   t2, 16(fp)              # 01042383 # lw      $2,16($fp)
         lw   t3,  0(t2)              # 0003ae03 # lw      $3,0($2)

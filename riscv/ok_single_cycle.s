@@ -6,7 +6,8 @@
 .option norvc
 
 .data
-before: .word 0
+before: 
+    .word 0
 
 .text
 li t0, 0x1000
@@ -21,4 +22,3 @@ start:
     blt t1, t2, start
 end:
     ebreak
-    

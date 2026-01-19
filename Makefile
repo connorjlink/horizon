@@ -27,7 +27,7 @@ SIM_TIMEOUT ?= 30
 MAX_MISMATCHES ?= 2
 
 # Legacy compatibility option. leave false for best simulation accuracy
-DEDUP_GHDL_WRITES ?= 1
+DEDUP_GHDL_WRITES ?= 0
 
 # Spike emulation settings
 SPIKE_ISA ?= rv32imac
