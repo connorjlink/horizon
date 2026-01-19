@@ -3,7 +3,7 @@
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1725:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
@@ -20,10 +20,10 @@
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@0ms:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1725:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@0ms:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-./source/control_unit.vhd:1577:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1725:25:@0ms:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
 ../../src/ieee2008/numeric_std-body.vhdl:3036:7:@15ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
@@ -34,103 +34,105 @@
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1347:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
 ../../src/ieee2008/numeric_std-body.vhdl:1320:7:@15ns:(assertion warning): NUMERIC_STD."<": metavalue detected, returning FALSE
-./source/control_unit.vhd:863:41:@460ns:(report note): addi
-./source/control_unit.vhd:863:41:@480ns:(report note): addi
-./source/control_unit.vhd:863:41:@480ns:(report note): addi
-./source/control_unit.vhd:863:41:@480ns:(report note): addi
-./source/control_unit.vhd:863:41:@480ns:(report note): addi
-./source/control_unit.vhd:863:41:@500ns:(report note): addi
-./source/control_unit.vhd:863:41:@500ns:(report note): addi
-./source/control_unit.vhd:863:41:@500ns:(report note): addi
-./source/control_unit.vhd:863:41:@500ns:(report note): addi
-./source/control_unit.vhd:863:41:@520ns:(report note): addi
-./source/control_unit.vhd:863:41:@520ns:(report note): addi
-./source/control_unit.vhd:863:41:@520ns:(report note): addi
-./source/control_unit.vhd:863:41:@520ns:(report note): addi
-./source/control_unit.vhd:863:41:@540ns:(report note): addi
-./source/control_unit.vhd:863:41:@540ns:(report note): addi
-./source/control_unit.vhd:863:41:@540ns:(report note): addi
-./source/control_unit.vhd:863:41:@540ns:(report note): addi
-./source/control_unit.vhd:863:41:@560ns:(report note): addi
-./source/control_unit.vhd:863:41:@560ns:(report note): addi
-./source/control_unit.vhd:863:41:@560ns:(report note): addi
-./source/control_unit.vhd:863:41:@560ns:(report note): addi
-./source/control_unit.vhd:863:41:@580ns:(report note): addi
-./source/control_unit.vhd:863:41:@580ns:(report note): addi
-./source/control_unit.vhd:863:41:@580ns:(report note): addi
-./source/control_unit.vhd:863:41:@580ns:(report note): addi
-./source/control_unit.vhd:863:41:@600ns:(report note): addi
-./source/control_unit.vhd:863:41:@600ns:(report note): addi
-./source/control_unit.vhd:863:41:@600ns:(report note): addi
-./source/control_unit.vhd:863:41:@600ns:(report note): addi
-./source/control_unit.vhd:863:41:@620ns:(report note): addi
-./source/control_unit.vhd:863:41:@620ns:(report note): addi
-./source/control_unit.vhd:863:41:@620ns:(report note): addi
-./source/control_unit.vhd:863:41:@620ns:(report note): addi
-./source/control_unit.vhd:863:41:@640ns:(report note): addi
-./source/control_unit.vhd:863:41:@640ns:(report note): addi
-./source/control_unit.vhd:863:41:@640ns:(report note): addi
-./source/control_unit.vhd:863:41:@640ns:(report note): addi
-./source/control_unit.vhd:863:41:@660ns:(report note): addi
-./source/control_unit.vhd:863:41:@660ns:(report note): addi
-./source/control_unit.vhd:863:41:@660ns:(report note): addi
-./source/control_unit.vhd:863:41:@660ns:(report note): addi
-./source/control_unit.vhd:863:41:@680ns:(report note): addi
-./source/control_unit.vhd:1145:49:@680ns:(report note): add
-./source/control_unit.vhd:1145:49:@680ns:(report note): add
-./source/control_unit.vhd:1145:49:@680ns:(report note): add
-./source/control_unit.vhd:1145:49:@700ns:(report note): add
-./source/control_unit.vhd:1138:49:@700ns:(report note): sub
-./source/control_unit.vhd:1138:49:@700ns:(report note): sub
-./source/control_unit.vhd:1138:49:@700ns:(report note): sub
-./source/control_unit.vhd:1138:49:@720ns:(report note): sub
-./source/control_unit.vhd:1145:49:@720ns:(report note): add
-./source/control_unit.vhd:1145:49:@720ns:(report note): add
-./source/control_unit.vhd:1145:49:@720ns:(report note): add
-./source/control_unit.vhd:1145:49:@740ns:(report note): add
-./source/control_unit.vhd:1138:49:@740ns:(report note): sub
-./source/control_unit.vhd:1138:49:@740ns:(report note): sub
-./source/control_unit.vhd:1138:49:@740ns:(report note): sub
-./source/control_unit.vhd:1138:49:@760ns:(report note): sub
-./source/control_unit.vhd:1145:49:@760ns:(report note): add
-./source/control_unit.vhd:1145:49:@760ns:(report note): add
-./source/control_unit.vhd:1145:49:@760ns:(report note): add
-./source/control_unit.vhd:1145:49:@780ns:(report note): add
-./source/control_unit.vhd:1138:49:@780ns:(report note): sub
-./source/control_unit.vhd:1138:49:@780ns:(report note): sub
-./source/control_unit.vhd:1138:49:@780ns:(report note): sub
-./source/control_unit.vhd:1138:49:@800ns:(report note): sub
-./source/control_unit.vhd:1145:49:@800ns:(report note): add
-./source/control_unit.vhd:1145:49:@800ns:(report note): add
-./source/control_unit.vhd:1145:49:@800ns:(report note): add
-./source/control_unit.vhd:1145:49:@820ns:(report note): add
-./source/control_unit.vhd:1138:49:@820ns:(report note): sub
-./source/control_unit.vhd:1138:49:@820ns:(report note): sub
-./source/control_unit.vhd:1138:49:@820ns:(report note): sub
-./source/control_unit.vhd:1138:49:@840ns:(report note): sub
-./source/control_unit.vhd:1145:49:@840ns:(report note): add
-./source/control_unit.vhd:1145:49:@840ns:(report note): add
-./source/control_unit.vhd:1145:49:@840ns:(report note): add
-./source/control_unit.vhd:1145:49:@860ns:(report note): add
-./source/control_unit.vhd:863:41:@860ns:(report note): addi
-./source/control_unit.vhd:863:41:@860ns:(report note): addi
-./source/control_unit.vhd:863:41:@860ns:(report note): addi
-./source/control_unit.vhd:863:41:@880ns:(report note): addi
-./source/control_unit.vhd:1145:49:@880ns:(report note): add
-./source/control_unit.vhd:1145:49:@880ns:(report note): add
-./source/control_unit.vhd:1145:49:@880ns:(report note): add
-./source/control_unit.vhd:1145:49:@900ns:(report note): add
-./source/control_unit.vhd:1557:37:@900ns:(report note): ebreak
-./source/control_unit.vhd:1557:37:@900ns:(report note): ebreak
-./source/control_unit.vhd:1557:37:@900ns:(report note): ebreak
-./source/control_unit.vhd:1562:37:@920ns:(report note): ecall
-./source/control_unit.vhd:1577:25:@920ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-./source/control_unit.vhd:1577:25:@920ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@920ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@920ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-./source/control_unit.vhd:1577:25:@920ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@930ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@930ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@950ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-../../src/ieee2008/numeric_std-body.vhdl:3036:7:@950ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-simulation finished @980ns
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@20ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@20ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1011:41:@20940ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20960ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20960ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20960ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20960ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20980ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20980ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20980ns:(report note): addi
+./source/control_unit.vhd:1011:41:@20980ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21us:(report note): addi
+./source/control_unit.vhd:1011:41:@21us:(report note): addi
+./source/control_unit.vhd:1011:41:@21us:(report note): addi
+./source/control_unit.vhd:1011:41:@21us:(report note): addi
+./source/control_unit.vhd:1011:41:@21020ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21020ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21020ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21020ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21040ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21040ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21040ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21040ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21060ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21060ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21060ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21060ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21080ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21080ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21080ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21080ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21100ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21100ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21100ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21100ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21120ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21120ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21120ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21120ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21140ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21140ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21140ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21140ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21160ns:(report note): addi
+./source/control_unit.vhd:1293:49:@21160ns:(report note): add
+./source/control_unit.vhd:1293:49:@21160ns:(report note): add
+./source/control_unit.vhd:1293:49:@21160ns:(report note): add
+./source/control_unit.vhd:1293:49:@21180ns:(report note): add
+./source/control_unit.vhd:1286:49:@21180ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21180ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21180ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21200ns:(report note): sub
+./source/control_unit.vhd:1293:49:@21200ns:(report note): add
+./source/control_unit.vhd:1293:49:@21200ns:(report note): add
+./source/control_unit.vhd:1293:49:@21200ns:(report note): add
+./source/control_unit.vhd:1293:49:@21220ns:(report note): add
+./source/control_unit.vhd:1286:49:@21220ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21220ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21220ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21240ns:(report note): sub
+./source/control_unit.vhd:1293:49:@21240ns:(report note): add
+./source/control_unit.vhd:1293:49:@21240ns:(report note): add
+./source/control_unit.vhd:1293:49:@21240ns:(report note): add
+./source/control_unit.vhd:1293:49:@21260ns:(report note): add
+./source/control_unit.vhd:1286:49:@21260ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21260ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21260ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21280ns:(report note): sub
+./source/control_unit.vhd:1293:49:@21280ns:(report note): add
+./source/control_unit.vhd:1293:49:@21280ns:(report note): add
+./source/control_unit.vhd:1293:49:@21280ns:(report note): add
+./source/control_unit.vhd:1293:49:@21300ns:(report note): add
+./source/control_unit.vhd:1286:49:@21300ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21300ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21300ns:(report note): sub
+./source/control_unit.vhd:1286:49:@21320ns:(report note): sub
+./source/control_unit.vhd:1293:49:@21320ns:(report note): add
+./source/control_unit.vhd:1293:49:@21320ns:(report note): add
+./source/control_unit.vhd:1293:49:@21320ns:(report note): add
+./source/control_unit.vhd:1293:49:@21340ns:(report note): add
+./source/control_unit.vhd:1011:41:@21340ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21340ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21340ns:(report note): addi
+./source/control_unit.vhd:1011:41:@21360ns:(report note): addi
+./source/control_unit.vhd:1293:49:@21360ns:(report note): add
+./source/control_unit.vhd:1293:49:@21360ns:(report note): add
+./source/control_unit.vhd:1293:49:@21360ns:(report note): add
+./source/control_unit.vhd:1293:49:@21380ns:(report note): add
+./source/control_unit.vhd:1705:37:@21380ns:(report note): ebreak
+./source/control_unit.vhd:1705:37:@21380ns:(report note): ebreak
+./source/control_unit.vhd:1705:37:@21380ns:(report note): ebreak
+./source/control_unit.vhd:1710:37:@21400ns:(report note): ecall
+./source/control_unit.vhd:1725:25:@21400ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+./source/control_unit.vhd:1725:25:@21400ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21400ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21400ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+./source/control_unit.vhd:1725:25:@21400ns:(report note): Illegal Instruction (0xUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU)
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21410ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21410ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21430ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+../../src/ieee2008/numeric_std-body.vhdl:3036:7:@21430ns:(assertion warning): NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
+simulation finished @21460ns

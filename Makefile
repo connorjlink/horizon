@@ -13,6 +13,7 @@ ASFLAGS := -march=rv32i -mabi=ilp32
 
 LD      := riscv64-unknown-elf-ld
 OBJCOPY := riscv64-unknown-elf-objcopy
+OBJDUMP := riscv64-unknown-elf-objdump
 
 JAVA    ?= java
 PYTHON  ?= python
@@ -28,6 +29,9 @@ MAX_MISMATCHES ?= 2
 
 # Legacy compatibility option. leave false for best simulation accuracy
 DEDUP_GHDL_WRITES ?= 0
+
+# `rars` or `as`
+HEX_TOOL ?= as
 
 # Spike emulation settings
 SPIKE_ISA ?= rv32imac
@@ -155,12 +159,45 @@ $(WORK_CF): $(SOURCE)
 $(BINARY_DIR):
 	mkdir $(BINARY_DIR)
 
+ifeq ($(HEX_TOOL),as)
+
+# Build an ELF with fixed segment addresses matching the testbench loader.
+$(BINARY_DIR)/%_ghdl.elf: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
+	@$(PYTHON) tools/build_elf.py \
+		--asm "$<" \
+		--out "$@" \
+		--as "$(AS)" \
+		--ld "$(LD)" \
+		--march "$(EMU_MARCH)" \
+		--mabi "$(EMU_MABI)" \
+		--text-addr "$(EMU_TEXT_ADDR)" \
+		--data-addr "$(EMU_DATA_ADDR)"
+
+# Generate both hex files in one shot (the _d.hex depends on _i.hex).
+$(BINARY_DIR)/%_i.hex: $(BINARY_DIR)/%_ghdl.elf | $(BINARY_DIR)
+	@$(PYTHON) tools/elf_to_hex.py \
+		--elf "$<" \
+		--out-ihex "$@" \
+		--out-dhex "$(BINARY_DIR)/$*_d.hex" \
+		--objcopy "$(OBJCOPY)" \
+		--objdump "$(OBJDUMP)" \
+		--text-base "$(EMU_TEXT_ADDR)" \
+		--data-base "$(EMU_DATA_ADDR)" \
+		--dwords 1024
+
+$(BINARY_DIR)/%_d.hex: $(BINARY_DIR)/%_i.hex
+	@:
+
+else
+
 $(BINARY_DIR)/%_i.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
 	$(RARS) a dump .text $(RARS_HEX) $@ $<
 
 $(BINARY_DIR)/%_d.hex: $(ASSEMBLY_DIR)/%.s | $(BINARY_DIR)
 	$(call TOUCH,$@)
 	$(RARS) a dump .data $(RARS_HEX) $@ $<
+
+endif
 
 $(TRACE_DIR):
 	mkdir $(TRACE_DIR)
