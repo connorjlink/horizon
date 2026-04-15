@@ -273,6 +273,17 @@ ghdl:
 		$(GHDL_GENERIC_ARGS)
 	@$(call CAT,$(TRACE_DIR)/$(basename $(notdir $(ASM))).ghdl.log)
 
+vga:
+	$(ANALYZE) ./source/types.vhd
+	$(ANALYZE) ./source/xor_2.vhd
+	$(ANALYZE) ./source/and_2.vhd
+	$(ANALYZE) ./source/or_2.vhd
+	$(ANALYZE) ./source/adder_1.vhd
+	$(ANALYZE) ./source/adder_N.vhd
+	$(ANALYZE) ./source/vga_driver.vhd
+	$(ANALYZE) ./test/tb_vga_driver.vhd
+	$(RUN) tb_vga_driver
+
 tests: test_barrel_shifter test_adder_1 test_adder_N test_addersubtractor_N test_arithmetic_logic_unit test_branch_unit test_not_N test_decoder_5to32 test_instruction_decoder test_register_1 test_register_N test_memory test_extender test_instruction_pointer test_multiplexer_32to1 test_multiplexer_2to1_N test_multiplexer_2to1 test_multiplier test_divider test_register_file test_control_unit test_processor
 
 verify: setup tests

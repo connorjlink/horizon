@@ -35,14 +35,15 @@ end vga_driver;
 --         total: 525 lines
 
 architecture implementation of vga_driver is
-begin
 
     -- Signals to hold the pixel counters
-    signal s_HCounter : std_logic_vector(9 downto 0) := (others => '0');
-    signal s_VCounter : std_logic_vector(9 downto 0) := (others => '0');
+    signal s_HCounter : unsigned(9 downto 0) := (others => '0');
+    signal s_VCounter : unsigned(9 downto 0) := (others => '0');
 
     signal s_HCounter_Incremented : std_logic_vector(9 downto 0) := (others => '0');
     signal s_VCounter_Incremented : std_logic_vector(9 downto 0) := (others => '0');
+
+begin
 
     ------------------------------------------------------
     -- Adder instances to increment the counters
@@ -53,11 +54,11 @@ begin
             N => 10
         )
         port map(
-            i_A => s_HCounter,
-            i_B => "0000000001", -- increment by 1
-            i_CarryIn => '0',
-            o_Sum => s_HCounter_Incremented,
-            o_CarryOut => open
+            i_A     => std_logic_vector(s_HCounter),
+            i_B     => "0000000001", -- increment by 1
+            i_Carry => '0',
+            o_S     => s_HCounter_Incremented,
+            o_Carry => open
         );
 
     e_VCounter: entity work.adder_N
@@ -65,44 +66,36 @@ begin
             N => 10
         )
         port map(
-            i_A => s_VCounter,
-            i_B => "0000000001", -- increment by 1
-            i_CarryIn => '0',
-            o_Sum => s_VCounter_Incremented,
-            o_CarryOut => open
+            i_A     => std_logic_vector(s_VCounter),
+            i_B     => "0000000001", -- increment by 1
+            i_Carry => '0',
+            o_S     => s_VCounter_Incremented,
+            o_Carry => open
         );
 
 
-    -- asynchronous reset, re-begin raster after vblank in front porch
+    -- horizontal and vertical counters + asynchronous reset
     process(
-        i_Reset
+        i_Clock, i_Reset
     )
     begin
         if i_Reset = '1' then
             s_HCounter <= (others => '0');
             s_VCounter <= (others => '0');
 
-        end if;
-
-    end process;
-
-    -- horizontal and vertical counters
-    process(
-        i_Clock
-    )
-    begin
-        if rising_edge(i_Clock) then
-            if s_HCounter = 10"800" then
+        elsif rising_edge(i_Clock) then
+            if s_HCounter = 799 then
                 s_HCounter <= (others => '0');
 
-                if s_VCounter = 10"525" then
+                if s_VCounter = 524 then
                     s_VCounter <= (others => '0');
                 else
-                    s_VCounter <= s_VCounter_Incremented;
+                    s_VCounter <= unsigned(s_VCounter_Incremented);
                 end if;
 
             else
-                s_HCounter <= s_HCounter_Incremented;
+                s_HCounter <= unsigned(s_HCounter_Incremented);
+
             end if;
 
         end if;
@@ -110,24 +103,23 @@ begin
     end process;
 
     -- generate sync signals based on counter values
-    o_HSync <= '0' when (s_HCounter >= 10"656") and (s_HCounter < 10"752") else
+    o_HSync <= '0' when (s_HCounter >= 656) and (s_HCounter < 752) else
                '1';
 
-    o_VSync <= '0' when (s_VCounter >= 10"490") and (s_VCounter < 10"492") else
+    o_VSync <= '0' when (s_VCounter >= 490) and (s_VCounter < 492) else
                '1';
 
 
     -- generate RGB signals based on visible area
     -- color pattern: red increases with X, green increases with Y (UV colorization), blue is 0
 
-    -- TODO: does the front and bach porch count against this?
-    o_Red <= s_HCounter(9 downto 6) when s_HCounter < 10"640" and s_VCounter < 10"480" else
+    o_Red <= std_logic_vector(s_HCounter(9 downto 6)) when s_HCounter < 640 and s_VCounter < 480 else
              (others => '0');
 
-    o_Green <= s_VCounter(9 downto 6) when s_HCounter < 10"640" and s_VCounter < 10"480" else
+    o_Green <= std_logic_vector(s_VCounter(9 downto 6)) when s_HCounter < 640 and s_VCounter < 480 else
                (others => '0');
 
-    o_Blue <= (others => '0') when s_HCounter < 10"640" and s_VCounter < 10"480" else
+    o_Blue <= (others => '0') when s_HCounter < 640 and s_VCounter < 480 else
               (others => '0');
 
 end implementation;
