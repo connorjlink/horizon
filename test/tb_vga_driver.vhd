@@ -16,13 +16,14 @@ end tb_vga_driver;
 
 architecture implementation of tb_vga_driver is
 
-constant TOTAL_PIXELS_X   : integer := 800; -- including porches and sync pulse
-constant TOTAL_PIXELS_Y   : integer := 525; -- including porches and sync pulse
+constant TOTAL_PIXELS_X   : integer := 800;
+constant TOTAL_PIXELS_Y   : integer := 525;
 constant TOTAL_PIXELS     : integer := TOTAL_PIXELS_X * TOTAL_PIXELS_Y;
 constant PIXELS_PER_CLOCK : integer := 1;
+constant FRAMES_TO_SIM    : integer := 2;
 
 constant CLOCK_PERIOD        : time := CLOCK_HALF_PERIOD * 2;
-constant SIMULATION_DURATION : time := CLOCK_PERIOD * TOTAL_PIXELS / PIXELS_PER_CLOCK;
+constant SIMULATION_DURATION : time := CLOCK_PERIOD * TOTAL_PIXELS * FRAMES_TO_SIM / PIXELS_PER_CLOCK;
 
 -- Testbench signals
 signal s_Clock, s_Reset : std_logic := '0';
@@ -34,11 +35,9 @@ signal s_oRed   : std_logic_vector(3 downto 0);
 signal s_oGreen : std_logic_vector(3 downto 0);
 signal s_oBlue  : std_logic_vector(3 downto 0);
 
--- Output signals
+-- Output file signals
 file output_file : text;
 signal is_open : boolean := false;
-signal start_time : time := 0 ns;
-
 
 begin
 
@@ -64,33 +63,27 @@ begin
 
     p_Reset: process
     begin
-        s_Reset <= '0';
-        wait for CLOCK_HALF_PERIOD / 2;
         s_Reset <= '1';
-        wait for CLOCK_PERIOD;
+        wait for 2 * CLOCK_PERIOD;
         s_Reset <= '0';
+        wait until rising_edge(s_Clock);
         wait;
     end process;
 
     p_Stimulus: process
     begin
-        -- Await reset and stabilization; trigger off-edge
-        wait for CLOCK_PERIOD;
+        wait until s_Reset = '0';
+        wait until rising_edge(s_Clock);
 
-        -- Open output file, format is `current_sim_time time_units: hs vs red green blue`
-        -- using https://gist.github.com/MadLittleMods/70c12160b564fb87e471e39af81d5edb
         file_open(output_file, "vga_output.txt", write_mode);
         is_open <= true;
 
-        -- Run VGA simulation
-        start_time <= now;
-        report "Starting simulation at " & time'image(start_time);
+        report "Starting simulation at " & time'image(now);
         wait for SIMULATION_DURATION;
         report "Finished simulation at " & time'image(now);
 
         file_close(output_file);
         is_open <= false;
-
         finish;
 
     end process;
@@ -103,8 +96,9 @@ begin
             wait until rising_edge(s_Clock);
             wait for 0 ns;
 
+            -- format: https://madlittlemods.github.io/vga-simulator/
             if is_open then
-                write(output_line, now - start_time);
+                write(output_line, now);
                 write(output_line, string'(": "));
                 write(output_line, s_oHSync);
                 write(output_line, string'(" "));

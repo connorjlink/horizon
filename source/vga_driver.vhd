@@ -119,7 +119,7 @@ begin
     o_Green <= std_logic_vector(s_VCounter(9 downto 6)) when s_HCounter < 640 and s_VCounter < 480 else
                (others => '0');
 
-    o_Blue <= (others => '0') when s_HCounter < 640 and s_VCounter < 480 else
+    o_Blue <= std_logic_vector(s_VCounter(9 downto 6)) when s_HCounter < 640 and s_VCounter < 480 else
               (others => '0');
 
 end implementation;
