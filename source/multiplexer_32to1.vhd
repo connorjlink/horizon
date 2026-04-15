@@ -1,5 +1,5 @@
 -- Horizon: multiplexer_32to1.vhd
--- (c) 2026 Connor J. Link. All rights reserved.
+-- (c) 2026 Connor J. Link. All Rights Reserved.
 
 library IEEE;
 use IEEE.std_logic_1164.all;
