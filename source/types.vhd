@@ -7,9 +7,9 @@ use IEEE.std_logic_1164.all;
 package types is
 
 -- Generic placeholders to define the bit widths for the architecture
-constant DATA_WIDTH : natural := 32;
-constant ADDRESS_WIDTH : natural := 10;
-constant THREAD_COUNT : natural := 2;
+constant DATA_WIDTH    : natural := 32;
+constant ADDRESS_WIDTH : natural := 32;
+constant THREAD_COUNT  : natural := 2;
 
 -- Return Address Stack (RAS) configuration
 constant RAS_DEPTH        : natural := 32;
@@ -241,6 +241,79 @@ constant WB_NOP : WB_record_t := (
     Forward      => FORWARDING_NONE,
     MemoryWidth  => BYTE_TYPE
 );
+
+------------------------------------------------------
+
+
+------------------------------------------------------
+-- Graphics card commands
+------------------------------------------------------
+
+type BlitterCommandType is (
+    COMMAND_NONE,
+    COMMAND_DRAW_SOLID_COLOR,
+    COMMAND_DRAW_OUTLINE_COLOR,
+    COMMAND_DRAW_TEXTURE,
+);
+
+type CompositorCommandType is (
+    COMPOSITOR_COMMAND_NONE,
+    COMPOSITOR_COMMAND_COMPOSITE
+);
+
+constant CHANNEL_DEPTH  : natural := 4; -- bits per channel
+constant COLOR_DEPTH    : natural := CHANNEL_DEPTH * 4; -- R, G, B, A
+constant TEXTURE_WIDTH  : natural := 256;
+constant TEXTURE_HEIGHT : natural := TEXTURE_WIDTH;
+
+constant FRAMEBUFFER_WIDTH  : natural := 640;
+constant FRAMEBUFFER_HEIGHT : natural := 480;
+
+constant FRAMEBUFFER_SLOTS : natural := 4; -- 3 application slots + index(0) for composite
+constant TEXTURE_SLOTS     : natural := 16;
+
+subtype FramebufferSlotType is natural range 0 to FRAMEBUFFER_SLOTS - 1;
+subtype TextureSlotType is natural range 0 to TEXTURE_SLOTS - 1;
+
+-- MMIO address regions
+constant FRAMEBUFFER_BASE : std_logic_vector(31 downto 0) := X"E0000000";
+constant TEXTURE_BASE     : std_logic_vector(31 downto 0) := X"D0000000";
+constant MMIO_BASE        : std_logic_vector(31 downto 0) := X"F0000000";
+
+
+constant MMIO_FRAMEBUFFER_SLOT : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000040";
+constant MMIO_TEXTURE_SLOT     : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000044";
+constant MMIO_COLOR            : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000048";
+
+
+function ComputeTextureSampleAddress(
+    constant slot : natural;
+    constant x    : std_logic_vector(7 downto 0);
+    constant y    : std_logic_vector(7 downto 0)
+) return std_logic_vector(31 downto 0) is 
+    variable slot_offset  : unsigned(15 downto 0) := unsigned(slot) * (TEXTURE_WIDTH * TEXTURE_HEIGHT * (COLOR_DEPTH / 8));
+    variable pixel_offset : unsigned(15 downto 0) := (unsigned(y) * TEXTURE_WIDTH + unsigned(x)) * (COLOR_DEPTH / 8);
+    variable address      : unsigned(31 downto 0) := unsigned(TEXTURE_BASE) + slot_offset + pixel_offset;
+begin
+
+    return std_logic_vector(address);
+
+end function;
+
+function ComputeFramebufferAddress(
+    constant slot : natural;
+    constant x    : std_logic_vector(9 downto 0);
+    constant y    : std_logic_vector(9 downto 0)
+) return std_logic_vector(31 downto 0) is 
+    variable slot_offset  : unsigned(15 downto 0) := unsigned(slot) * (FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * (COLOR_DEPTH / 8));
+    variable pixel_offset : unsigned(15 downto 0) := (unsigned(y) * FRAMEBUFFER_WIDTH + unsigned(x)) * (COLOR_DEPTH / 8);
+    variable address      : unsigned(31 downto 0) := unsigned(FRAMEBUFFER_BASE) + slot_offset + pixel_offset;
+begin
+
+    return std_logic_vector(address);
+
+end function;
+
 
 ------------------------------------------------------
 

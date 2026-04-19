@@ -55,7 +55,7 @@ begin
 
     -- dividend and divisor behavior per RISC-V M specification
     s_DividendIsNegative  <= i_DividendIsSigned and i_Dividend(N-1);
-    s_DivisorIsNegative   <= i_DivisorIsSigned  and i_Divisor(N-1);
+    s_DivisorIsNegative   <= i_DivisorIsSigned and i_Divisor(N-1);
     s_QuotientIsNegative  <= s_DividendIsNegative xor s_DivisorIsNegative;
     s_RemainderIsNegative <= s_DividendIsNegative;
 
