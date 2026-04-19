@@ -73,8 +73,8 @@ begin
             s_RectangleY        <= 0;
             s_AbsoluteWidth     <= 0;
             s_AbsoluteHeight    <= 0;
-            s_WidthIsNegative     <= '0';
-            s_HeightIsNegative    <= '0';
+            s_WidthIsNegative   <= '0';
+            s_HeightIsNegative  <= '0';
             s_XIndex            <= 0;
             s_YIndex            <= 0;
             s_FramebufferSlot   <= 0;
@@ -117,7 +117,7 @@ begin
                 case s_Command is
                     when COMMAND_DRAW_SOLID_COLOR =>
                         v_WriteEnable := '1';
-                        
+
                     when COMMAND_DRAW_OUTLINE_COLOR =>
                         if v_IsBorder then
                             v_WriteEnable := '1';
@@ -168,7 +168,7 @@ begin
                 -- idle: accept one command, ignore others while busy
                 case i_Command is
                     when COMMAND_DRAW_SOLID_COLOR | COMMAND_DRAW_OUTLINE_COLOR =>
-                        v_Width := to_integer(i_RectangleWidth);
+                        v_Width  := to_integer(i_RectangleWidth);
                         v_Height := to_integer(i_RectangleHeight);
 
                         if v_Width < 0 then
@@ -190,10 +190,10 @@ begin
                         if (v_AbsoluteWidth /= 0) and (v_AbsoluteHeight /= 0) then
                             s_Command         <= i_Command;
                             s_Busy            <= '1';
-                            s_RectangleX           <= to_integer(i_RectangleX);
-                            s_RectangleY           <= to_integer(i_RectangleY);
-                            s_AbsoluteWidth        <= v_AbsoluteWidth;
-                            s_AbsoluteHeight       <= v_AbsoluteHeight;
+                            s_RectangleX      <= to_integer(i_RectangleX);
+                            s_RectangleY      <= to_integer(i_RectangleY);
+                            s_AbsoluteWidth   <= v_AbsoluteWidth;
+                            s_AbsoluteHeight  <= v_AbsoluteHeight;
                             s_XIndex          <= 0;
                             s_YIndex          <= 0;
                             s_FramebufferSlot <= to_integer(unsigned(i_FramebufferSlot));
