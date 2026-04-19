@@ -35,64 +35,77 @@ end vga_blitter;
 
 architecture implementation of vga_blitter is
 
-    constant BYTES_PER_PIXEL         : natural := COLOR_DEPTH / 8;
-    constant FRAMEBUFFER_STRIDE_BYTE : natural := FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * BYTES_PER_PIXEL;
+    constant BYTES_PER_PIXEL : natural := COLOR_DEPTH / 8;
 
-    signal s_Busy             : std_logic := '0';
-    signal s_Command          : BlitterCommandType := COMMAND_NONE;
-    signal s_RectangleX       : integer range -2048 to 2047 := 0;
-    signal s_RectangleY       : integer range -2048 to 2047 := 0;
-    signal s_AbsoluteWidth    : natural range 0 to 1024 := 0;
-    signal s_AbsoluteHeight   : natural range 0 to 1024 := 0;
-    signal s_XIndex           : natural range 0 to 1023 := 0;
-    signal s_YIndex           : natural range 0 to 1023 := 0;
-    signal s_WidthIsNegative  : std_logic := '0';
-    signal s_HeightIsNegative : std_logic := '0';
-    signal s_FramebufferSlot  : FramebufferSlotType := 0;
+    signal s_Busy                  : std_logic := '0';
+    signal s_Command               : BlitterCommandType := COMMAND_NONE;
+
+    signal s_RectangleX            : integer range -2048 to 2047 := 0;
+    signal s_RectangleY            : integer range -2048 to 2047 := 0;
+    signal s_AbsoluteWidth         : natural range 0 to 1024 := 0;
+    signal s_AbsoluteHeight        : natural range 0 to 1024 := 0;
+    signal s_XIndex                : natural range 0 to 1023 := 0;
+    signal s_YIndex                : natural range 0 to 1023 := 0;
+    signal s_WidthIsNegative       : std_logic := '0';
+    signal s_HeightIsNegative      : std_logic := '0';
+    signal s_FramebufferSlot       : FramebufferSlotType := 0;
+
+    signal s_TextureX              : integer range -2048 to 2047 := 0;
+    signal s_TextureY              : integer range -2048 to 2047 := 0;
+    signal s_AbsoluteTextureWidth  : natural range 0 to 256 := 0;
+    signal s_AbsoluteTextureHeight : natural range 0 to 256 := 0;
+    signal s_TextureWidthNegative  : std_logic := '0';
+    signal s_TextureHeightNegative : std_logic := '0';
+    signal s_TextureSlot           : TextureSlotType := 0;
 
 begin
 
-    process(
-        i_Clock, i_Reset
-    )
+    process(i_Clock, i_Reset)
         variable v_Width          : integer;
         variable v_Height         : integer;
         variable v_AbsoluteWidth  : natural;
         variable v_AbsoluteHeight : natural;
         variable v_FramebufferX   : integer;
         variable v_FramebufferY   : integer;
+        variable v_TextureSampleX : integer;
+        variable v_TextureSampleY : integer;
+        variable v_ScaledXIndex   : integer;
+        variable v_ScaledYIndex   : integer;
         variable v_IsBorder       : boolean;
         variable v_WriteEnable    : std_logic;
-        variable v_Address        : unsigned(ADDRESS_WIDTH - 1 downto 0);
-
     begin
         if i_Reset = '1' then
-            s_Busy              <= '0';
-            s_Command           <= COMMAND_NONE;
-            s_RectangleX        <= 0;
-            s_RectangleY        <= 0;
-            s_AbsoluteWidth     <= 0;
-            s_AbsoluteHeight    <= 0;
-            s_WidthIsNegative   <= '0';
-            s_HeightIsNegative  <= '0';
-            s_XIndex            <= 0;
-            s_YIndex            <= 0;
-            s_FramebufferSlot   <= 0;
+            s_Busy                  <= '0';
+            s_Command               <= COMMAND_NONE;
+            s_RectangleX            <= 0;
+            s_RectangleY            <= 0;
+            s_AbsoluteWidth         <= 0;
+            s_AbsoluteHeight        <= 0;
+            s_XIndex                <= 0;
+            s_YIndex                <= 0;
+            s_WidthIsNegative       <= '0';
+            s_HeightIsNegative      <= '0';
+            s_FramebufferSlot       <= 0;
+            s_TextureX              <= 0;
+            s_TextureY              <= 0;
+            s_AbsoluteTextureWidth  <= 0;
+            s_AbsoluteTextureHeight <= 0;
+            s_TextureWidthNegative  <= '0';
+            s_TextureHeightNegative <= '0';
+            s_TextureSlot           <= 0;
 
-            o_TextureAddress     <= (others => '0');
-            o_FramebufferAddress <= (others => '0');
-            o_WriteEnable        <= '0';
-            o_Busy               <= '0';
+            o_TextureAddress        <= (others => '0');
+            o_FramebufferAddress    <= (others => '0');
+            o_WriteEnable           <= '0';
+            o_Busy                  <= '0';
 
         elsif rising_edge(i_Clock) then
-            -- defaults each cycle
-            o_TextureAddress     <= (others => '0');
-            o_FramebufferAddress <= (others => '0');
-            o_WriteEnable        <= '0';
-            o_Busy               <= s_Busy;
+            o_TextureAddress      <= (others => '0');
+            o_FramebufferAddress  <= (others => '0');
+            o_WriteEnable         <= '0';
+            o_Busy                <= s_Busy;
 
             if s_Busy = '1' then
-                -- current pixel within signed rectangle walk
                 if s_WidthIsNegative = '1' then
                     v_FramebufferX := s_RectangleX - integer(s_XIndex);
                 else
@@ -105,22 +118,53 @@ begin
                     v_FramebufferY := s_RectangleY + integer(s_YIndex);
                 end if;
 
-                -- edge test for outline mode
                 v_IsBorder :=
                     (s_XIndex = 0) or
                     (s_YIndex = 0) or
                     (s_XIndex = s_AbsoluteWidth - 1) or
                     (s_YIndex = s_AbsoluteHeight - 1);
 
-                -- command-local write decision
                 v_WriteEnable := '0';
                 case s_Command is
                     when COMMAND_DRAW_SOLID_COLOR =>
                         v_WriteEnable := '1';
+                        o_TextureAddress <= MMIO_COLOR;
 
                     when COMMAND_DRAW_OUTLINE_COLOR =>
                         if v_IsBorder then
                             v_WriteEnable := '1';
+                        end if;
+                        o_TextureAddress <= MMIO_COLOR;
+
+                    when COMMAND_DRAW_TEXTURE =>
+                        if (s_AbsoluteWidth /= 0) and (s_AbsoluteHeight /= 0) and
+                           (s_AbsoluteTextureWidth /= 0) and (s_AbsoluteTextureHeight /= 0) then
+
+                            v_ScaledXIndex := integer((s_XIndex * s_AbsoluteTextureWidth) / s_AbsoluteWidth);
+                            v_ScaledYIndex := integer((s_YIndex * s_AbsoluteTextureHeight) / s_AbsoluteHeight);
+
+                            if s_TextureWidthNegative = '1' then
+                                v_TextureSampleX := s_TextureX - v_ScaledXIndex;
+                            else
+                                v_TextureSampleX := s_TextureX + v_ScaledXIndex;
+                            end if;
+
+                            if s_TextureHeightNegative = '1' then
+                                v_TextureSampleY := s_TextureY - v_ScaledYIndex;
+                            else
+                                v_TextureSampleY := s_TextureY + v_ScaledYIndex;
+                            end if;
+
+                            if (v_TextureSampleX >= 0) and (v_TextureSampleX < TEXTURE_WIDTH) and
+                               (v_TextureSampleY >= 0) and (v_TextureSampleY < TEXTURE_HEIGHT) then
+                                o_TextureAddress <= ComputeTextureSampleAddress(
+                                    s_TextureSlot,
+                                    std_logic_vector(to_unsigned(v_TextureSampleX, 8)),
+                                    std_logic_vector(to_unsigned(v_TextureSampleY, 8))
+                                );
+                                v_WriteEnable := '1';
+                            end if;
+
                         end if;
 
                     when others =>
@@ -128,28 +172,21 @@ begin
 
                 end case;
 
-                -- color draw reads from MMIO color register
-                o_TextureAddress <= MMIO_COLOR;
-
-                -- clip to framebuffer bounds
                 if (v_FramebufferX >= 0) and (v_FramebufferX < FRAMEBUFFER_WIDTH) and
                    (v_FramebufferY >= 0) and (v_FramebufferY < FRAMEBUFFER_HEIGHT) and
                    (v_WriteEnable = '1') then
 
-                    v_Address := unsigned(FRAMEBUFFER_BASE) + to_unsigned(
-                        (s_FramebufferSlot * FRAMEBUFFER_STRIDE_BYTE) +
-                        ((v_FramebufferY * FRAMEBUFFER_WIDTH + v_FramebufferX) * BYTES_PER_PIXEL),
-                        ADDRESS_WIDTH
+                    o_FramebufferAddress <= ComputeFramebufferAddress(
+                        s_FramebufferSlot,
+                        std_logic_vector(to_unsigned(v_FramebufferX, 10)),
+                        std_logic_vector(to_unsigned(v_FramebufferY, 10))
                     );
-
-                    o_FramebufferAddress <= std_logic_vector(v_Address);
                     o_WriteEnable <= '1';
                 else
                     o_WriteEnable <= '0';
 
                 end if;
 
-                -- advance raster cursor
                 if (s_XIndex + 1) < s_AbsoluteWidth then
                     s_XIndex <= s_XIndex + 1;
                 else
@@ -157,7 +194,6 @@ begin
                     if (s_YIndex + 1) < s_AbsoluteHeight then
                         s_YIndex <= s_YIndex + 1;
                     else
-                        -- done
                         s_Busy    <= '0';
                         s_Command <= COMMAND_NONE;
                     end if;
@@ -165,9 +201,8 @@ begin
                 end if;
 
             else
-                -- idle: accept one command, ignore others while busy
                 case i_Command is
-                    when COMMAND_DRAW_SOLID_COLOR | COMMAND_DRAW_OUTLINE_COLOR =>
+                    when COMMAND_DRAW_SOLID_COLOR | COMMAND_DRAW_OUTLINE_COLOR | COMMAND_DRAW_TEXTURE =>
                         v_Width  := to_integer(i_RectangleWidth);
                         v_Height := to_integer(i_RectangleHeight);
 
@@ -187,16 +222,46 @@ begin
                             v_AbsoluteHeight := natural(v_Height);
                         end if;
 
+                        if i_Command = COMMAND_DRAW_TEXTURE then
+                            v_Width  := to_integer(i_TextureWidth);
+                            v_Height := to_integer(i_TextureHeight);
+
+                            if v_Width < 0 then
+                                s_TextureWidthNegative <= '1';
+                                v_AbsoluteWidth := natural(-v_Width);
+                            else
+                                s_TextureWidthNegative <= '0';
+                                v_AbsoluteWidth := natural(v_Width);
+                            end if;
+
+                            if v_Height < 0 then
+                                s_TextureHeightNegative <= '1';
+                                v_AbsoluteHeight := natural(-v_Height);
+                            else
+                                s_TextureHeightNegative <= '0';
+                                v_AbsoluteHeight := natural(v_Height);
+                            end if;
+
+                        end if;
+
                         if (v_AbsoluteWidth /= 0) and (v_AbsoluteHeight /= 0) then
-                            s_Command         <= i_Command;
-                            s_Busy            <= '1';
-                            s_RectangleX      <= to_integer(i_RectangleX);
-                            s_RectangleY      <= to_integer(i_RectangleY);
-                            s_AbsoluteWidth   <= v_AbsoluteWidth;
-                            s_AbsoluteHeight  <= v_AbsoluteHeight;
-                            s_XIndex          <= 0;
-                            s_YIndex          <= 0;
-                            s_FramebufferSlot <= to_integer(unsigned(i_FramebufferSlot));
+                            s_Command        <= i_Command;
+                            s_Busy           <= '1';
+                            s_RectangleX     <= to_integer(i_RectangleX);
+                            s_RectangleY     <= to_integer(i_RectangleY);
+                            s_AbsoluteWidth  <= v_AbsoluteWidth;
+                            s_AbsoluteHeight <= v_AbsoluteHeight;
+                            s_XIndex         <= 0;
+                            s_YIndex         <= 0;
+                            s_FramebufferSlot <= i_FramebufferSlot;
+
+                            if i_Command = COMMAND_DRAW_TEXTURE then
+                                s_TextureSlot          <= i_TextureSlot;
+                                s_TextureX             <= to_integer(i_TextureX);
+                                s_TextureY             <= to_integer(i_TextureY);
+                                s_AbsoluteTextureWidth  <= v_AbsoluteWidth;
+                                s_AbsoluteTextureHeight <= v_AbsoluteHeight;
+                            end if;
 
                             o_Busy <= '1';
 
@@ -217,5 +282,6 @@ begin
         end if;
 
     end process;
+
 
 end implementation;

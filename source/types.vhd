@@ -276,24 +276,30 @@ subtype FramebufferSlotType is natural range 0 to FRAMEBUFFER_SLOTS - 1;
 subtype TextureSlotType is natural range 0 to TEXTURE_SLOTS - 1;
 
 -- MMIO address regions
-constant FRAMEBUFFER_BASE : std_logic_vector(31 downto 0) := X"E0000000";
-constant TEXTURE_BASE     : std_logic_vector(31 downto 0) := X"D0000000";
-constant MMIO_BASE        : std_logic_vector(31 downto 0) := X"F0000000";
+constant FRAMEBUFFER_BASE : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"E0000000";
+constant TEXTURE_BASE     : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"D0000000";
+constant MMIO_BASE        : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"F0000000";
 
 
-constant MMIO_FRAMEBUFFER_SLOT : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000040";
-constant MMIO_TEXTURE_SLOT     : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000044";
-constant MMIO_COLOR            : std_logic_vector(31 downto 0) := MMIO_BASE + X"00000048";
+constant MMIO_FRAMEBUFFER_SLOT : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000040";
+constant MMIO_TEXTURE_SLOT     : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000044";
+constant MMIO_COLOR            : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000048";
 
 
 function ComputeTextureSampleAddress(
     constant slot : natural;
     constant x    : std_logic_vector(7 downto 0);
     constant y    : std_logic_vector(7 downto 0)
-) return std_logic_vector(31 downto 0) is 
-    variable slot_offset  : unsigned(15 downto 0) := unsigned(slot) * (TEXTURE_WIDTH * TEXTURE_HEIGHT * (COLOR_DEPTH / 8));
-    variable pixel_offset : unsigned(15 downto 0) := (unsigned(y) * TEXTURE_WIDTH + unsigned(x)) * (COLOR_DEPTH / 8);
-    variable address      : unsigned(31 downto 0) := unsigned(TEXTURE_BASE) + slot_offset + pixel_offset;
+) return std_logic_vector(ADDRESS_WIDTH - 1 downto 0) is
+    variable slot_offset  : unsigned(ADDRESS_WIDTH - 1 downto 0) := to_unsigned(
+        slot * (TEXTURE_WIDTH * TEXTURE_HEIGHT * (COLOR_DEPTH / 8)),
+        ADDRESS_WIDTH
+    );
+    variable pixel_offset : unsigned(ADDRESS_WIDTH - 1 downto 0) := to_unsigned(
+        (to_integer(unsigned(y)) * TEXTURE_WIDTH + to_integer(unsigned(x))) * (COLOR_DEPTH / 8),
+        ADDRESS_WIDTH
+    );
+    variable address      : unsigned(ADDRESS_WIDTH - 1 downto 0) := unsigned(TEXTURE_BASE) + slot_offset + pixel_offset;
 begin
 
     return std_logic_vector(address);
@@ -304,14 +310,20 @@ function ComputeFramebufferAddress(
     constant slot : natural;
     constant x    : std_logic_vector(9 downto 0);
     constant y    : std_logic_vector(9 downto 0)
-) return std_logic_vector(31 downto 0) is 
-    variable slot_offset  : unsigned(15 downto 0) := unsigned(slot) * (FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * (COLOR_DEPTH / 8));
-    variable pixel_offset : unsigned(15 downto 0) := (unsigned(y) * FRAMEBUFFER_WIDTH + unsigned(x)) * (COLOR_DEPTH / 8);
-    variable address      : unsigned(31 downto 0) := unsigned(FRAMEBUFFER_BASE) + slot_offset + pixel_offset;
+) return std_logic_vector(3 1 downto 0) is
+    variable slot_offset  : unsigned(ADDRESS_WIDTH - 1 downto 0) := to_unsigned(
+        slot * (FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * (COLOR_DEPTH / 8)),
+        ADDRESS_WIDTH
+    );
+    variable pixel_offset : unsigned(ADDRESS_WIDTH - 1 downto 0) := to_unsigned(
+        (to_integer(unsigned(y)) * FRAMEBUFFER_WIDTH + to_integer(unsigned(x))) * (COLOR_DEPTH / 8),
+        ADDRESS_WIDTH
+    );
+    variable address      : unsigned(ADDRESS_WIDTH - 1 downto 0) := unsigned(FRAMEBUFFER_BASE) + slot_offset + pixel_offset;
 begin
 
     return std_logic_vector(address);
-
+    
 end function;
 
 
