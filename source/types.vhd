@@ -159,6 +159,7 @@ type ID_record_t is record
     DS2                     : std_logic_vector(31 downto 0);
     Immediate               : std_logic_vector(31 downto 0);
     Break                   : std_logic;
+    EnvironmentBreak        : std_logic;
     IsBranch                : std_logic;
     IsStride4               : std_logic; -- 0: 2 bytes, 1: 4 bytes
     IsSignExtend            : std_logic; -- 0: zero-extend, 1: sign-extend
@@ -182,6 +183,7 @@ constant ID_NOP : ID_record_t := (
     DS2                     => (others => '0'),
     Immediate               => (others => '0'),
     Break                   => '0',
+    EnvironmentBreak        => '0',
     IsBranch                => '0',
     IsStride4               => '0',
     IsSignExtend            => '0',

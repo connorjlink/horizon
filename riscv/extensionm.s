@@ -127,7 +127,7 @@ _start:
     rem x7, x5, x6
     bne x7, x8, fail
 
-    # Test 15.) rem: -20 % 6 = -2 (remainder sign follows dividend)
+    # Test 15.) rem: -20 % 6 = -2
     li x2, 15
     li x5, -20
     li x6, 6

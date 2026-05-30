@@ -79,13 +79,13 @@ signal s_BranchUnit_RedirectAddress    : std_logic_vector(31 downto 0) := (other
 signal s_BranchUnit_ResolvedLoad       : std_logic := '0';
 
 -- JALR in-flight analysis
-signal s_JALR_IsVerified            : std_logic := '0';
-signal s_JALR_TargetComputed        : std_logic_vector(31 downto 0) := (others => '0');
-signal s_JALR_IsVerified_IDEX : std_logic := '0';
-signal s_PredUsed_IDEX          : std_logic := '0';
+signal s_JALR_IsVerified       : std_logic := '0';
+signal s_JALR_TargetComputed   : std_logic_vector(31 downto 0) := (others => '0');
+signal s_JALR_IsVerified_IDEX  : std_logic := '0';
+signal s_PredUsed_IDEX         : std_logic := '0';
 
-signal s_IPLoad                       : std_logic := '0';
-signal s_IPLoadAddress                : std_logic_vector(31 downto 0) := (others => '0');
+signal s_IPLoad                : std_logic := '0';
+signal s_IPLoadAddress         : std_logic_vector(31 downto 0) := (others => '0');
 
 signal s_IFID_Flush_Final : std_logic := '0';
 signal s_IDEX_Flush_Final : std_logic := '0';
@@ -249,7 +249,7 @@ begin
         );
 
     MEMWB_MEM_raw.Data <= ExtendMemoryData(s_DataMemoryOutput, MEMWB_ID_raw.MemoryWidth, '1', 32);
-    IDEX_ID_raw.Data <= ExtendMemoryData(s_DataMemoryOutput, IDEX_ID_raw.MemoryWidth, '1', 32);
+    IDEX_ID_raw.Data   <= ExtendMemoryData(s_DataMemoryOutput, IDEX_ID_raw.MemoryWidth,  '1', 32);
 
     -----------------------------------------------------
 
@@ -548,7 +548,7 @@ begin
             i_Stall       => s_IPBreak or s_ALUBusy,
             i_Load        => s_IPLoad,
             i_LoadAddress => s_IPLoadAddress,
-            i_IsStride4   => IDEX_ID_raw.IsStride4, -- NOTE: this must be _raw to avoid miscalculation (unless using instruction pre-decoder)
+            i_IsStride4   => IDEX_ID_raw.IsStride4, -- NOTE: this must be _raw to avoid miscalculation
             o_Address     => s_IPAddress,
             o_LinkAddress => s_NextInstructionAddress
         );
@@ -653,6 +653,7 @@ begin
             o_RS2                     => IDEX_ID_raw.RS2,
             o_Immediate               => IDEX_ID_raw.Immediate,
             o_Break                   => IDEX_ID_raw.Break,
+            o_EnvironmentBreak        => IDEX_ID_raw.EnvironmentBreak,
             o_IsBranch                => IDEX_ID_raw.IsBranch,
             o_IPToALU                 => IDEX_ID_raw.IPToALU,
             o_IsStride4               => IDEX_ID_raw.IsStride4,

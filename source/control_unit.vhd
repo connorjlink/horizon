@@ -29,6 +29,7 @@ entity control_unit is
         o_RS2                           : out std_logic_vector(4 downto 0);
         o_Immediate                     : out std_logic_vector(31 downto 0);
         o_Break                         : out std_logic;
+        o_EnvironmentBreak              : out std_logic;
         o_IsBranch                      : out std_logic;
         o_IPToALU                       : out std_logic;
         o_IsStride4                     : out std_logic;
@@ -378,6 +379,7 @@ begin
         variable v_Quadrant                      : std_logic_vector(1 downto 0);
         variable v_IsBranch                      : std_logic;
         variable v_Break                         : std_logic;
+        variable v_EnvironmentBreak              : std_logic;
         variable v_IsSignExtend                  : std_logic;
         variable v_MemoryWriteEnable             : std_logic;
         variable v_RegisterFileWriteEnable       : std_logic;
@@ -406,6 +408,7 @@ begin
         if i_Reset = '0' then
             v_IsBranch                      := '0';
             v_Break                         := '0';
+            v_EnvironmentBreak              := '0';
             v_IsSignExtend                  := '1'; -- 0: zero-extend, 1: sign-extend
             v_MemoryWriteEnable             := '0';
             v_RegisterFileWriteEnable       := '0';
@@ -555,16 +558,26 @@ begin
 
                         when 3b"001" =>
                             -- c.jal
-                            null;
+                            -- EXPANDS TO: jal x1, offset
+                            v_Immediate := s_extCjImmediate;
+                            v_BranchOperator := JAL_TYPE;
+                            v_RegisterFileWriteEnable := '1';
+                            v_RegisterSource := RFSOURCE_FROMNEXTIP;
+                            v_BranchMode := BRANCHMODE_JAL_OR_BCC;
+                            v_RD := 5b"00001"; -- hardwired return address
+                            if ENABLE_DEBUG then
+                                report "c.jal" severity note;
+                            end if;
 
                         when 3b"010" =>
                             -- c.li
+                            -- EXPANDS TO: addi xd, x0, imm
                             if s_decCRD_RS1 /= 5b"00000" then
                                 v_ALUOperator := ADD_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
                                 v_Immediate := s_extCiImmediate;
                                 v_RD := s_decCRD_RS1;
-                                v_RS1 := 5b"00000"; -- addi xd, x0, imm
+                                v_RS1 := 5b"00000";
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMALU;
                                 if ENABLE_DEBUG then
@@ -583,8 +596,17 @@ begin
 
                                 if s_decCRD_RS1 = 5b"00010" then
                                     -- c.addi16sp
-                                    -- TODO:
-                                    null;
+                                    -- EXPANDS TO: addi x2, x2, imm << 4
+                                    v_ALUOperator := ADD_OPERATOR;
+                                    v_ALUSource := ALUSOURCE_IMMEDIATE;
+                                    v_Immediate := s_extCuImmediate;
+                                    v_RD := 5b"00010";
+                                    v_RS1 := 5b"00010";
+                                    v_RegisterFileWriteEnable := '1';
+                                    v_RegisterSource := RFSOURCE_FROMALU;
+                                    if ENABLE_DEBUG then
+                                        report "c.addi16sp" severity note;
+                                    end if;
 
                                 else
                                     -- c.lui
@@ -655,6 +677,7 @@ begin
 
                                 when 2b"10" =>
                                     -- c.andi
+                                    -- EXPANDS TO: andi rd', rs1', imm
                                     v_ALUOperator := AND_OPERATOR;
                                     v_ALUSource := ALUSOURCE_IMMEDIATE;
                                     v_Immediate := s_extCiImmediate;
@@ -668,6 +691,7 @@ begin
 
                                 when 2b"11" =>
                                     -- c.sub / c.xor / c.or / c.and
+                                    -- EXPANDS TO: <mnemonic> rd', rs1', rs2'
                                     v_ALUSource := ALUSOURCE_REGISTER;
                                     v_RD := CompressedRegisterToRegister(s_decCRS1Prime);
                                     v_RS1 := CompressedRegisterToRegister(s_decCRS1Prime);
@@ -723,11 +747,12 @@ begin
 
                         when 3b"101" =>
                             -- c.j
+                            -- EXPANDS TO: jal x0, offset
                             v_Immediate := s_extCjImmediate;
                             v_BranchOperator := BEQ_TYPE;
                             v_BranchMode := BRANCHMODE_JAL_OR_BCC;
                             v_IsBranch := '1';
-                            v_RS1 := 5b"00000"; -- force x0 = x0
+                            v_RS1 := 5b"00000";
                             v_RS2 := 5b"00000";
                             if ENABLE_DEBUG then
                                 report "c.j" severity note;
@@ -737,6 +762,7 @@ begin
 
                         when 3b"110" =>
                             -- c.beqz
+                            -- EXPANDS TO: beq rs1', x0, offset
                             v_BranchOperator := BEQ_TYPE;
                             v_BranchMode := BRANCHMODE_JAL_OR_BCC;
                             v_IsBranch := '1';
@@ -749,6 +775,7 @@ begin
 
                         when 3b"111" =>
                             -- c.bnez
+                            -- EXPANDS TO: bne rs1', x0, offset
                             v_BranchOperator := BNE_TYPE;
                             v_BranchMode := BRANCHMODE_JAL_OR_BCC;
                             v_IsBranch := '1';
@@ -773,6 +800,7 @@ begin
 
                         when 3b"000" =>
                             -- c.slli
+                            -- EXPANDS TO: slli rd, rd, imm
                             if s_decCFunc4(0) = '0' then
                                 v_ALUOperator := SLL_OPERATOR;
                                 v_ALUSource := ALUSOURCE_IMMEDIATE;
@@ -802,6 +830,7 @@ begin
 
                         when 3b"010" =>
                             -- c.lwsp
+                            -- EXPANDS TO: lw rd, offset(sp)
                             if s_decCRD_RS1 /= 5b"00000" then
                                 v_RegisterFileWriteEnable := '1';
                                 v_RegisterSource := RFSOURCE_FROMRAM;
@@ -810,7 +839,7 @@ begin
                                 v_RS1 := 5b"00010"; -- stack pointer
                                 v_RD := s_decCRD_RS1;
                                 v_MemoryWidth := WORD_TYPE;
-                                v_IsSignExtend := '0'; -- zero-extend
+                                v_IsSignExtend := '0';
                                 if ENABLE_DEBUG then
                                     report "c.lwsp" severity note;
                                 end if;
@@ -836,6 +865,7 @@ begin
 
                                 if s_decCRS2 = 5b"00000" then
                                     -- c.jr
+                                    -- EXPANDS TO: jalr x0, rs1, 0
                                     if s_decCRD_RS1 /= 5b"00000" then
                                         v_Immediate := 32x"0";
                                         v_BranchOperator := JALR_TYPE;
@@ -857,6 +887,7 @@ begin
 
                                 else
                                     -- c.mv
+                                    -- EXPANDS TO: add rd, x0, rs2
                                     if s_decCRD_RS1 /= 5b"00000" then
                                         v_ALUOperator := ADD_OPERATOR;
                                         v_ALUSource := ALUSOURCE_REGISTER;
@@ -884,13 +915,14 @@ begin
 
                                     if s_decCRD_RS1 = 5b"00000" then
                                         -- c.ebreak
-                                        v_Break := '1';
+                                        v_EnvironmentBreak := '1';
                                         if ENABLE_DEBUG then
                                             report "c.ebreak" severity note;
                                         end if;
 
                                     else
                                         -- c.jalr
+                                        -- EXPANDS TO: jalr x1, rs1, 0
                                         if s_decCRD_RS1 /= 5b"00000" then
                                             v_Immediate := 32x"0";
                                             v_BranchOperator := JALR_TYPE;
@@ -916,6 +948,7 @@ begin
 
                                 else
                                     -- c.add
+                                    -- EXPANDS TO: add rd, rs1, rs2
                                     if s_decCRD_RS1 /= 5b"00000" then
                                         v_ALUOperator := ADD_OPERATOR;
                                         v_ALUSource := ALUSOURCE_REGISTER;
@@ -949,7 +982,17 @@ begin
 
                         when 3b"110" =>
                             -- c.swsp
-                            -- TODO:
+                            -- EXPANDS TO: sw rs2, offset(sp)
+                            v_MemoryWriteEnable := '1';
+                            v_ALUSource := ALUSOURCE_IMMEDIATE;
+                            v_Immediate := std_logic_vector(resize(unsigned(s_decCsImmediate), DATA_WIDTH));
+                            v_RS1 := 5b"00010"; -- stack pointer
+                            v_RS2 := s_decCRS2;
+                            v_MemoryWidth := WORD_TYPE;
+                            v_IsSignExtend := '0';
+                            if ENABLE_DEBUG then
+                                report "c.swsp" severity note;
+                            end if;
                             null;
 
                         when 3b"111" =>
@@ -1700,7 +1743,7 @@ begin
                         when 7b"1110011" => -- ecall/ebreak
                             if i_Instruction = 32b"00000000000100000000000001110011" then
                                 -- ebreak
-                                v_Break := '1';
+                                v_EnvironmentBreak := '1';
                                 if ENABLE_DEBUG then
                                     report "ebreak" severity note; 
                                 end if;
@@ -1730,6 +1773,7 @@ begin
         else
             v_IsBranch                      := '0';
             v_Break                         := '0';
+            v_EnvironmentBreak              := '0';
             v_IsSignExtend                  := '1'; -- default case is sign extension
             v_MemoryWriteEnable             := '0';
             v_RegisterFileWriteEnable       := '0';
@@ -1754,6 +1798,7 @@ begin
         o_RS2                           <= v_RS2;
         o_IsBranch                      <= v_IsBranch;
         o_Break                         <= v_Break;
+        o_EnvironmentBreak              <= v_EnvironmentBreak;
         o_IsSignExtend                  <= v_IsSignExtend;
         s_IsSignExtend                  <= v_IsSignExtend;
         o_MemoryWriteEnable             <= v_MemoryWriteEnable;
