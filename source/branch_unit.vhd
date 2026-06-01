@@ -9,57 +9,63 @@ use work.types.all;
 
 entity branch_unit is
     port(
-        i_Clock          : in  std_logic;
-        i_Reset          : in  std_logic := '0';
+        i_Clock                  : in  std_logic;
+        i_Reset                  : in  std_logic            := '0';
 
         -- branch decision inputs
-        i_DS1               : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        i_DS2               : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        i_BranchOperator    : in  branch_operator_t;
-        o_BranchTaken       : out std_logic;
-        o_BranchNotTaken    : out std_logic;
+        i_DS1                    : in  data_width_t;
+        i_DS2                    : in  data_width_t;
+        i_BranchOperator         : in  branch_operator_t;
 
         -- lookup interface
-        i_LookupEnable      : in  std_logic := '0';
-        i_LookupIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_LookupInstruction : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        o_Prediction        : out std_logic;
-        o_BTBIsHit          : out std_logic;
-        o_PredictedTarget   : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        o_PredictedOperator : out branch_operator_t;
+        i_LookupEnable           : in  std_logic            := '0';
+        i_LookupIP               : in  data_width_t         := (others => '0');
+        i_LookupInstruction      : in  data_width_t         := (others => '0');
 
-        -- RAS / return prediction outputs (return target predicted without BTB)
-        o_IsReturnPrediction : out std_logic;
-        o_RASPointer         : out std_logic_vector(RAS_POINTER_BITS-1 downto 0);
-        o_RASCount           : out std_logic_vector(RAS_COUNT_BITS-1 downto 0);
+        -- speculative RAS updates
+        i_SpeculateEnable        : in  std_logic            := '0';
+        i_SpeculateIP            : in  address_vector_t     := (others => '0');
+        i_SpeculateInstruction   : in  data_vector_t        := (others => '0');
 
-        -- speculative RAS update interface (asserted when fetch redirects using prediction)
-        i_SpeculateEnable      : in  std_logic := '0';
-        i_SpeculateIP          : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_SpeculateInstruction : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-
-        -- RAS restore (rollback to checkpoint)
-        i_RASRestoreEnable  : in  std_logic := '0';
-        i_RASRestorePointer : in  std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
-        i_RASRestoreCount   : in  std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
+        -- RAS rollback checkpoint restore
+        i_RASRestoreEnable       : in  std_logic            := '0';
+        i_RASRestorePointer      : in  ras_pointer_vector_t := (others => '0');
+        i_RASRestoreCount        : in  ras_count_vector_t   := (others => '0');
 
         -- update interface
-        i_UpdateEnable           : in  std_logic := '0';
-        i_UpdateIP               : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_UpdateTarget           : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_UpdateTaken            : in  std_logic := '0';
-        i_UpdateOperator         : in  branch_operator_t := BRANCH_NONE;
-        i_UpdateInstruction      : in  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-        i_UpdateIsPredictionUsed : in  std_logic := '0'
+        i_UpdateEnable           : in  std_logic            := '0';
+        i_UpdateIP               : in  address_vector_t     := (others => '0');
+        i_UpdateTarget           : in  address_vector_t     := (others => '0');
+        i_UpdateTaken            : in  std_logic            := '0';
+        i_UpdateOperator         : in  branch_operator_t    := BRANCH_NONE;
+        i_UpdateInstruction      : in  data_vector_t        := (others => '0');
+        i_UpdateIsPredictionUsed : in  std_logic            := '0'
+
+        -- actual branch resolution decisions
+        o_BranchTaken            : out std_logic;
+        o_BranchNotTaken         : out std_logic;
+
+        -- branch prediction output interface
+        o_Prediction             : out std_logic;
+        o_BTBIsHit               : out std_logic;
+        o_PredictedTarget        : out data_vector_t;
+        o_PredictedOperator      : out branch_operator_t;
+        o_IsReturnPrediction     : out std_logic;
+        o_RASPointer             : out ras_pointer_vector_t;
+        o_RASCount               : out ras_count_vector_t;
     );
 end branch_unit;
 
 architecture implementation of branch_unit is
 
--- default LSB for branch addresses is half-word aligned (compressed instructions)
-constant BRANCH_LSB : natural := 1;
+-- default LSB for branch addresses is half-word aligned for compress parcels
+constant BRANCH_LSB     : natural := 1;
 
--- 128 sets x 2-way set associative branch target buffer
+-----------------------------------------------------
+-- branch target buffer configuration
+-----------------------------------------------------
+
+-- 128 sets x 2-way set associative buffer
 constant BTB_SETS       : natural := 128;
 constant BTB_WAYS       : natural := 2;
 constant BTB_INDEX_BITS : natural := clog2(BTB_SETS);
@@ -78,6 +84,10 @@ end record;
 
 type btb_way_array_t is array (0 to BTB_WAYS-1) of btb_entry_t;
 type btb_set_array_t is array (0 to BTB_SETS-1) of btb_way_array_t;
+
+-- pseudo-LRU replacement way selection with 1 bit per set
+type btb_lru_t is array (0 to BTB_SETS-1) of std_logic;
+
 signal s_BTB : btb_set_array_t := (others => (others => (
     IsValid        => '0',
     Tag            => (others => '0'),
@@ -85,23 +95,30 @@ signal s_BTB : btb_set_array_t := (others => (others => (
     BranchOperator => BRANCH_NONE
 )));
 
--- pseudo-LRU replacement way selection with 1 bit per set
-type btb_lru_t is array (0 to BTB_SETS-1) of std_logic;
 signal s_BTBReplaceWay : btb_lru_t := (others => '0');
 
+-----------------------------------------------------
+
+
+-----------------------------------------------------
+-- pattern history table configuration
+-----------------------------------------------------
 
 -- PHT is 256 entries, directly mapped
-constant PHT_ENTRIES : natural := 256;
+constant PHT_ENTRIES    : natural := 256;
 constant PHT_INDEX_BITS : natural := clog2(PHT_ENTRIES);
-constant PHT_INDEX_LSB : natural := BRANCH_LSB;
-constant PHT_INDEX_MSB : natural := PHT_INDEX_LSB + PHT_INDEX_BITS - 1;
+constant PHT_INDEX_LSB  : natural := BRANCH_LSB;
+constant PHT_INDEX_MSB  : natural := PHT_INDEX_LSB + PHT_INDEX_BITS - 1;
 
 subtype pht_counter_t is std_logic_vector(1 downto 0);
 type pht_array_t is array (0 to PHT_ENTRIES-1) of pht_counter_t;
-signal s_PHT : pht_array_t := (others => (others => '0'));
 
-signal s_PHTUpdateEnable : std_logic := '0';
+signal s_PHT             : pht_array_t                      := (others => (others => '0'));
+signal s_PHTUpdateEnable : std_logic                        := '0';
 signal s_PHTUpdateIndex  : natural range 0 to PHT_ENTRIES-1 := 0;
+
+-----------------------------------------------------
+
 
 
 subtype ras_entry_t is std_logic_vector(DATA_WIDTH-1 downto 0);

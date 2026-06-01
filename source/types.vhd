@@ -7,14 +7,31 @@ use IEEE.std_logic_1164.all;
 package types is
 
 -- Generic placeholders to define the bit widths for the architecture
-constant DATA_WIDTH    : natural := 32;
-constant ADDRESS_WIDTH : natural := 32;
-constant THREAD_COUNT  : natural := 2;
+constant DATA_WIDTH     : natural := 32;
+constant ADDRESS_WIDTH  : natural := 32;
+constant THREAD_COUNT   : natural := 2;
+constant THREAD_WIDTH   : natural := 1; -- clog2(THREAD_COUNT)
+constant REGISTER_COUNT : natural := 32;
+constant REGISTER_WIDTH : natural := 5; -- clog2(REGISTER_COUNT)
 
 -- Return Address Stack (RAS) configuration
 constant RAS_DEPTH        : natural := 32;
-constant RAS_POINTER_BITS : natural := 5; -- clog2(32)
-constant RAS_COUNT_BITS   : natural := 6; -- clog2(33) rounded up
+constant RAS_POINTER_BITS : natural := 5; -- clog2(RAS_DEPTH)
+constant RAS_COUNT_BITS   : natural := 6; -- clog2(RAS_DEPTH + 1) rounded up
+
+
+-- Nongeneric bitvectors for arhitectural use
+subtype data_vector_t is std_logic_vector(DATA_WIDTH - 1 downto 0);
+subtype data_unsigned_t is unsigned(DATA_WIDTH - 1 downto 0);
+
+subtype address_vector_t is std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
+
+subtype address_unsigned_t is unsigned(ADDRESS_WIDTH - 1 downto 0);
+subtype thread_id_t is std_logic_vector(THREAD_WIDTH - 1 downto 0);
+
+subtype register_vector_t is std_logic_vector(REGISTER_WIDTH - 1 downto 0);
+subtype ras_pointer_vector_t is std_logic_vector(RAS_POINTER_BITS - 1 downto 0);
+subtype ras_count_vector_t is std_logic_vector(RAS_COUNT_BITS - 1 downto 0);
 
 -- Type declaration for the register file storage
 type array_t is array (natural range <>) of std_logic_vector(31 downto 0);
@@ -97,6 +114,15 @@ type forwarding_path_t is (
     FORWARDING_FROMEXMEM_ALU,
     FORWARDING_FROMMEMWB_ALU
 );
+
+
+-- Privilege levels for instruction execution and exception handling
+type privilege_level_t is (
+    USER_MODE,
+    SUPERVISOR_MODE,
+    MACHINE_MODE
+);
+
 
 ------------------------------------------------------
 
@@ -278,21 +304,21 @@ subtype FramebufferSlotType is natural range 0 to FRAMEBUFFER_SLOTS - 1;
 subtype TextureSlotType is natural range 0 to TEXTURE_SLOTS - 1;
 
 -- MMIO address regions
-constant FRAMEBUFFER_BASE : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"E0000000";
-constant TEXTURE_BASE     : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"D0000000";
-constant MMIO_BASE        : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := X"F0000000";
+constant FRAMEBUFFER_BASE : address_vector_t := X"E0000000";
+constant TEXTURE_BASE     : address_vector_t := X"D0000000";
+constant MMIO_BASE        : address_vector_t := X"F0000000";
 
 
-constant MMIO_FRAMEBUFFER_SLOT : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000040";
-constant MMIO_TEXTURE_SLOT     : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000044";
-constant MMIO_COLOR            : std_logic_vector(ADDRESS_WIDTH - 1 downto 0) := MMIO_BASE + X"00000048";
+constant MMIO_FRAMEBUFFER_SLOT : address_vector_t := MMIO_BASE + X"00000040";
+constant MMIO_TEXTURE_SLOT     : address_vector_t := MMIO_BASE + X"00000044";
+constant MMIO_COLOR            : address_vector_t := MMIO_BASE + X"00000048";
 
 
 function ComputeTextureSampleAddress(
     constant slot : natural;
     constant x    : std_logic_vector(7 downto 0);
     constant y    : std_logic_vector(7 downto 0)
-) return std_logic_vector(ADDRESS_WIDTH - 1 downto 0) is
+) return address_vector_t is
     variable slot_offset  : unsigned(ADDRESS_WIDTH - 1 downto 0) := to_unsigned(
         slot * (TEXTURE_WIDTH * TEXTURE_HEIGHT * (COLOR_DEPTH / 8)),
         ADDRESS_WIDTH

@@ -9,15 +9,59 @@ use work.types.all;
 
 entity exception_handler is
     port(
-        i_Clock     : in  std_logic;
-        i_Reset     : in  std_logic;
-        i_Interrupt : in  std_logic;
-        i_MCause    : in  std_logic_vector(3 downto 0)
+        i_Clock              : in  std_logic;
+        i_Reset              : in  std_logic;
+
+        -- Fault Triggers
+        i_Interrupt          : in  std_logic;
+        i_MCause             : in  std_logic_vector(3 downto 0);
+        i_ValidCommit        : in  std_logic;
+
+        -- Fault Context
+        i_ExceptionIP        : in  address_vector_t;
+        i_FaultValue         : in  address_vector_t; -- faulting address or instruction
+        i_MTVEC_Base         : in  address_vector_t;
+        i_PrivilegeLevel     : in  privilege_level_t;
+
+        -- Pipeline Control
+        o_Flush              : out std_logic;
+        o_TrapTaken          : out std_logic;
+        o_TrapIP             : out address_vector_t;
+
+        -- CSR Updates
+        o_CSRWriteEnable     : out std_logic;
+        o_MEPC               : out address_vector_t;
+        o_MCauseUpdate       : out std_logic_vector(3 downto 0);
+        o_MTVAL              : out address_vector_t
     );
 end exception_handler;
 
 architecture implementation of exception_handler is
+
+    signal s_TakeTrap : std_logic;
+
 begin
+
+    -- A trap is taken on a valid commit cycle if an interrupt or exception is flagged
+    s_TakeTrap <= i_ValidCommit and (i_Interrupt or i_ExceptionValid);
+
+    -- Flush the pipeline stages and signal the trap transition to the control unit
+    o_Flush     <= s_TakeTrap;
+    o_TrapTaken <= s_TakeTrap;
+
+    -- Load the instruction pointer with the trap vector base address
+    -- Note: Vectored mode for interrupts would calculate an offset here (MTVEC_Base + 4 * MCause)
+    o_TrapIP <= i_MTVEC_Base;
+
+    -- Pass contextual data along to be written into the CSR file
+    o_CSRWriteEnable <= s_TakeTrap;
+    o_MEPC           <= i_ExceptionIP;
+    o_MCauseUpdate   <= i_MCause;
+    o_MTVAL          <= i_FaultValue;
+
+    -----------------------------------------------------
+    -- Notes on exception cause encodings
+    -----------------------------------------------------
 
     -- Interrupt 0: exceptions
     -- Mcause == 0: Instruction address misaligned
@@ -41,7 +85,6 @@ begin
     -- Mcause == 21: Load guest-page fault
     -- Mcause == 22: Store/AMO guest-page fault
     -- Mcause == 23-31: reserved
-
 
     -- Interrupt 1: interrupts
     -- Mcause == 0: reserved

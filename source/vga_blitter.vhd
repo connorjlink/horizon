@@ -26,8 +26,8 @@ entity vga_blitter is
         i_TextureHeight      : in  signed(7 downto 0);
         -- graphics card either writes generates a color or texture sample
         -- if color, address points to the MMIO register of the color, else the texture sample address
-        o_TextureAddress     : out std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
-        o_FramebufferAddress : out std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
+        o_TextureAddress     : out address_vector_t;
+        o_FramebufferAddress : out address_vector_t;
         o_WriteEnable        : out std_logic;
         o_Busy               : out std_logic
     );
