@@ -12,17 +12,17 @@ entity branch_unit is
         i_Clock                  : in  std_logic;
         i_Reset                  : in  std_logic            := '0';
 
-        -- branch decision inputs
+        -- Branch decision inputs
         i_DS1                    : in  data_width_t;
         i_DS2                    : in  data_width_t;
         i_BranchOperator         : in  branch_operator_t;
 
-        -- lookup interface
+        -- Lookup interface
         i_LookupEnable           : in  std_logic            := '0';
         i_LookupIP               : in  data_width_t         := (others => '0');
         i_LookupInstruction      : in  data_width_t         := (others => '0');
 
-        -- speculative RAS updates
+        -- Speculative RAS updates
         i_SpeculateEnable        : in  std_logic            := '0';
         i_SpeculateIP            : in  address_vector_t     := (others => '0');
         i_SpeculateInstruction   : in  data_vector_t        := (others => '0');
@@ -32,7 +32,7 @@ entity branch_unit is
         i_RASRestorePointer      : in  ras_pointer_vector_t := (others => '0');
         i_RASRestoreCount        : in  ras_count_vector_t   := (others => '0');
 
-        -- update interface
+        -- Update interface
         i_UpdateEnable           : in  std_logic            := '0';
         i_UpdateIP               : in  address_vector_t     := (others => '0');
         i_UpdateTarget           : in  address_vector_t     := (others => '0');
@@ -41,11 +41,11 @@ entity branch_unit is
         i_UpdateInstruction      : in  data_vector_t        := (others => '0');
         i_UpdateIsPredictionUsed : in  std_logic            := '0'
 
-        -- actual branch resolution decisions
+        -- Actual branch resolution decisions
         o_BranchTaken            : out std_logic;
         o_BranchNotTaken         : out std_logic;
 
-        -- branch prediction output interface
+        -- Branch prediction output interface
         o_Prediction             : out std_logic;
         o_BTBIsHit               : out std_logic;
         o_PredictedTarget        : out data_vector_t;
@@ -58,7 +58,7 @@ end branch_unit;
 
 architecture implementation of branch_unit is
 
--- default LSB for branch addresses is half-word aligned for compress parcels
+-- Default LSB for branch addresses is half-word aligned for compress parcels
 constant BRANCH_LSB     : natural := 1;
 
 -----------------------------------------------------
@@ -85,7 +85,7 @@ end record;
 type btb_way_array_t is array (0 to BTB_WAYS-1) of btb_entry_t;
 type btb_set_array_t is array (0 to BTB_SETS-1) of btb_way_array_t;
 
--- pseudo-LRU replacement way selection with 1 bit per set
+-- Pseudo-LRU replacement way selection with 1 bit per set
 type btb_lru_t is array (0 to BTB_SETS-1) of std_logic;
 
 signal s_BTB : btb_set_array_t := (others => (others => (
@@ -95,13 +95,18 @@ signal s_BTB : btb_set_array_t := (others => (others => (
     BranchOperator => BRANCH_NONE
 )));
 
-signal s_BTBReplaceWay : btb_lru_t := (others => '0');
+signal s_BTBReplaceWay       : btb_lru_t                     := (others => '0');
+signal s_BTBLookupIsHit      : std_logic                     := '0';
+signal s_BTBLookupWay        : integer range 0 to BTB_WAYS-1 := 0;
+signal s_BTBLookupOperator   : branch_operator_t             := BRANCH_NONE;
+signal s_BTBLookupTarget     : data_vector_t                 := (others => '0');
+signal s_BTBLookupPrediction : std_logic                     := '0';
 
 -----------------------------------------------------
 
 
 -----------------------------------------------------
--- pattern history table configuration
+-- Pattern history table configuration
 -----------------------------------------------------
 
 -- PHT is 256 entries, directly mapped
@@ -120,29 +125,30 @@ signal s_PHTUpdateIndex  : natural range 0 to PHT_ENTRIES-1 := 0;
 -----------------------------------------------------
 
 
+-----------------------------------------------------
+-- Return address stack configuration
+-----------------------------------------------------
 
-subtype ras_entry_t is std_logic_vector(DATA_WIDTH-1 downto 0);
+subtype ras_entry_t is data_vector_t;
 type ras_array_t is array (0 to RAS_DEPTH-1) of ras_entry_t;
+
 signal s_RAS : ras_array_t := (others => (others => '0'));
--- Pointer points to next free slot; count tracks occupancy
+
+-- Pointer points to next free slot
 signal s_RASPointer : natural range 0 to RAS_DEPTH-1 := 0;
-signal s_RASCount   : natural range 0 to RAS_DEPTH := 0;
+-- Track slot occupancy
+signal s_RASCount   : natural range 0 to RAS_DEPTH   := 0;
 
+-----------------------------------------------------
 
-signal s_LookupIsHit      : std_logic := '0';
-signal s_LookupWay        : integer range 0 to BTB_WAYS-1 := 0;
-signal s_LookupOperator   : branch_operator_t := BRANCH_NONE;
-signal s_LookupTarget     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-signal s_LookupPrediction : std_logic := '0';
 
 signal s_PredecoderBranchOperator : branch_operator_t := BRANCH_NONE;
-
-signal s_IsReturnPrediction : std_logic := '0';
+signal s_IsReturnPrediction       : std_logic := '0';
 
 begin 
 
     -----------------------------------------------------
-    -- Instruction Flow
+    -- Instruction flow predecoder
     -----------------------------------------------------
 
     e_InstructionPredecoder : entity work.instruction_predecoder
@@ -151,9 +157,11 @@ begin
             o_BranchOperator => s_PredecoderBranchOperator
         );
 
+    -----------------------------------------------------
+
 
     -----------------------------------------------------
-    -- Pattern History Table (storage)
+    -- Pattern history table
     -----------------------------------------------------
 
     s_PHTUpdateEnable <= '1' when (i_UpdateEnable = '1' and IsConditionalBranch(i_UpdateOperator)) else '0';
@@ -179,7 +187,10 @@ begin
     end generate g_PatternHistoryTable;
 
     -----------------------------------------------------
-    -- BTB & PHT lookup
+
+
+    -----------------------------------------------------
+    -- Branch target buffer and pattern history table lookup
     -----------------------------------------------------
 
     process(
@@ -194,16 +205,14 @@ begin
         variable v_PHTIndex       : natural range 0 to PHT_ENTRIES-1;
         variable v_Counter        : pht_counter_t;
         variable v_PredictedTaken : std_logic;
-
-        variable v_IsReturn    : boolean;
-        variable v_RASTopIndex : natural range 0 to RAS_DEPTH-1;
-        variable v_RASTop      : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable v_IsReturn       : boolean;
+        variable v_RASTopIndex    : natural range 0 to RAS_DEPTH-1;
+        variable v_RASTop         : std_logic_vector(DATA_WIDTH-1 downto 0);
     begin
-        v_BTBSetIndex := to_integer(unsigned(i_LookupIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
-        v_BTBTag      := i_LookupIP(BTB_TAG_MSB downto BTB_TAG_LSB);
-        v_PHTIndex    := to_integer(unsigned(i_LookupIP(PHT_INDEX_MSB downto PHT_INDEX_LSB)));
-        v_Counter     := s_PHT(v_PHTIndex);
-
+        v_BTBSetIndex    := to_integer(unsigned(i_LookupIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
+        v_BTBTag         := i_LookupIP(BTB_TAG_MSB downto BTB_TAG_LSB);
+        v_PHTIndex       := to_integer(unsigned(i_LookupIP(PHT_INDEX_MSB downto PHT_INDEX_LSB)));
+        v_Counter        := s_PHT(v_PHTIndex);
         v_BTBIsHit       := '0';
         v_BTBHitWay      := 0;
         v_BranchOperator := BRANCH_NONE;
@@ -216,16 +225,18 @@ begin
                 v_BTBHitWay      := i;
                 v_BranchOperator := s_BTB(v_BTBSetIndex)(i).BranchOperator;
                 v_BranchTarget   := s_BTB(v_BTBSetIndex)(i).TargetAddress;
+
             end if;
 
         end loop;
 
-        -- Default operator to predecoder on BTB miss.
+        -- Read branch from predecoder on BTB miss
         if v_BTBIsHit = '0' then
             v_BranchOperator := s_PredecoderBranchOperator;
         end if;
 
-        -- Canonical return: jalr x0, ra, 0
+        -- TODO: simplify with additional constants in types.vhd
+        -- Canonical return instruction jalr x0, ra, 0
         v_IsReturn := false;
         if (i_LookupInstruction(6 downto 0) = "1100111") and
            (i_LookupInstruction(14 downto 12) = "000") and
@@ -242,14 +253,17 @@ begin
             else
                 v_RASTopIndex := s_RASPointer - 1;
             end if;
+
             v_RASTop := s_RAS(v_RASTopIndex);
+
         end if;
 
-        -- Return prediction via RAS has priority and does not require BTB.
+        -- No BTB lookup for RAS hit
         if (i_LookupEnable = '1') and v_IsReturn and (s_RASCount > 0) then
             v_PredictedTaken := '1';
             v_BranchTarget   := v_RASTop;
 
+        -- Otherwise check for BTB hit
         elsif i_LookupEnable = '1' and v_BTBIsHit = '1' then
 
             if IsUnconditionalBranch(v_BranchOperator) then
@@ -261,7 +275,7 @@ begin
             end if;
 
         else
-            -- no hit; can predict taken only for unconditional branches
+            -- No hit; predict taken only for unconditional branches
             if IsUnconditionalBranch(s_PredecoderBranchOperator) then
                 v_PredictedTaken := '1';
             else
@@ -270,28 +284,28 @@ begin
 
         end if;
 
-        s_LookupIsHit      <= v_BTBIsHit when i_LookupEnable = '1' else '0';
-        s_LookupWay        <= v_BTBHitWay;
-        s_LookupOperator   <= v_BranchOperator;
-        s_LookupTarget     <= v_BranchTarget;
-        s_LookupPrediction <= v_PredictedTaken;
-
-        s_IsReturnPrediction <= '1' when ((i_LookupEnable = '1') and v_IsReturn and (s_RASCount > 0)) else '0';
+        s_BTBLookupIsHit       <= v_BTBIsHit when i_LookupEnable = '1' else '0';
+        s_BTBLookupWay         <= v_BTBHitWay;
+        s_BTBLookupOperator    <= v_BranchOperator;
+        s_BTBLookupTarget      <= v_BranchTarget;
+        s_BTBLookupPrediction  <= v_PredictedTaken;
+        s_IsReturnPrediction   <= '1' when ((i_LookupEnable = '1') and v_IsReturn and (s_RASCount > 0)) else '0';
 
     end process;
 
-    o_BTBIsHit          <= s_LookupIsHit;
-    o_PredictedTarget   <= s_LookupTarget;
-    o_PredictedOperator <= s_LookupOperator;
-    o_Prediction        <= s_LookupPrediction;
-
+    o_BTBIsHit           <= s_BTBLookupIsHit;
+    o_PredictedTarget    <= s_BTBLookupTarget;
+    o_PredictedOperator  <= s_BTBLookupOperator;
+    o_Prediction         <= s_BTBLookupPrediction;
     o_IsReturnPrediction <= s_IsReturnPrediction;
-    o_RASPointer <= std_logic_vector(to_unsigned(s_RASPointer, RAS_POINTER_BITS));
-    o_RASCount   <= std_logic_vector(to_unsigned(s_RASCount,   RAS_COUNT_BITS));
+    o_RASPointer         <= std_logic_vector(to_unsigned(s_RASPointer, RAS_POINTER_BITS));
+    o_RASCount           <= std_logic_vector(to_unsigned(s_RASCount,   RAS_COUNT_BITS));
+
+    -----------------------------------------------------
 
 
     -----------------------------------------------------
-    -- BTB & PHT update
+    -- Branch target buffer and pattern history table update
     -----------------------------------------------------
 
     process(
@@ -307,11 +321,11 @@ begin
 
         if rising_edge(i_Clock) then
 
-            if i_LookupEnable = '1' and s_LookupIsHit = '1' then
+            if i_LookupEnable = '1' and s_BTBLookupIsHit = '1' then
 
                 v_BTBSetIndex := to_integer(unsigned(i_LookupIP(BTB_INDEX_MSB downto BTB_INDEX_LSB)));
 
-                if s_LookupWay = 0 then
+                if s_BTBLookupWay = 0 then
                     s_BTBReplaceWay(v_BTBSetIndex) <= '1';
                 else
                     s_BTBReplaceWay(v_BTBSetIndex) <= '0';
@@ -348,7 +362,7 @@ begin
                     end if;
 
                 else
-                    -- invalid way or use replacement bit
+                    -- Invalid way or use replacement bit
                     if s_BTB(v_BTBSetIndex)(0).IsValid = '0' then
                         v_Victim := 0;
                     elsif s_BTB(v_BTBSetIndex)(1).IsValid = '0' then
@@ -380,9 +394,11 @@ begin
 
     end process;
 
+    -----------------------------------------------------
+
 
     -----------------------------------------------------
-    -- Return Address Stack (RAS)
+    -- Return address stack update
     -----------------------------------------------------
 
     process(
@@ -390,19 +406,17 @@ begin
     )
         variable v_IsCallInstruction    : boolean;
         variable v_IsReturnInstruction  : boolean;
-        variable v_Opcode : std_logic_vector(6 downto 0);
-        variable v_Func3  : std_logic_vector(2 downto 0);
-        variable v_RD     : std_logic_vector(4 downto 0);
-        variable v_RS1    : std_logic_vector(4 downto 0);
-        variable v_Imm12  : std_logic_vector(11 downto 0);
-        variable v_IPStride : std_logic_vector(DATA_WIDTH-1 downto 0);
-
-        variable v_StackPointer : natural range 0 to RAS_DEPTH-1;
-        variable v_StackCount : natural range 0 to RAS_DEPTH;
-
-        variable v_WorkInstruction : std_logic_vector(DATA_WIDTH-1 downto 0);
-        variable v_WorkIP    : std_logic_vector(DATA_WIDTH-1 downto 0);
-        variable v_ApplyResolvedUpdate : boolean;
+        variable v_Opcode               : std_logic_vector(6 downto 0);
+        variable v_Func3                : std_logic_vector(2 downto 0);
+        variable v_RD                   : std_logic_vector(4 downto 0);
+        variable v_RS1                  : std_logic_vector(4 downto 0);
+        variable v_Imm12                : std_logic_vector(11 downto 0);
+        variable v_IPStride             : data_vector_t;
+        variable v_StackPointer         : natural range 0 to RAS_DEPTH-1;
+        variable v_StackCount           : natural range 0 to RAS_DEPTH;
+        variable v_WorkInstruction      : data_vector_t;
+        variable v_WorkIP               : address_vector_t;
+        variable v_ApplyResolvedUpdate  : boolean;
     begin
 
         if rising_edge(i_Clock) then
@@ -410,32 +424,34 @@ begin
             if i_Reset = '1' then
                 s_RASPointer <= 0;
                 s_RASCount   <= 0;
+
             else
 
-                -- default: hold current state
-                v_StackPointer := s_RASPointer;
-                v_StackCount := s_RASCount;
+                -- Default: hold current state
+                v_StackPointer        := s_RASPointer;
+                v_StackCount          := s_RASCount;
                 v_ApplyResolvedUpdate := false;
 
-                -- Roll back to checkpoint on mispredict; then re-apply resolving instruction update.
+                -- Misprediction rollback with higher priority than speculate update
                 if i_RASRestoreEnable = '1' then
-                    v_StackPointer := to_integer(unsigned(i_RASRestorePointer));
-                    v_StackCount := to_integer(unsigned(i_RASRestoreCount));
+                    v_StackPointer        := to_integer(unsigned(i_RASRestorePointer));
+                    v_StackCount          := to_integer(unsigned(i_RASRestoreCount));
                     v_ApplyResolvedUpdate := (i_UpdateEnable = '1');
-                    v_WorkInstruction := i_UpdateInstruction;
-                    v_WorkIP    := i_UpdateIP;
+                    v_WorkInstruction     := i_UpdateInstruction;
+                    v_WorkIP              := i_UpdateIP;
 
-                -- Speculative update: only when the fetch unit actually redirects using prediction.
+                -- Speculative update
                 elsif i_SpeculateEnable = '1' then
-                    v_WorkInstruction := i_SpeculateInstruction;
-                    v_WorkIP    := i_SpeculateIP;
+                    v_WorkInstruction     := i_SpeculateInstruction;
+                    v_WorkIP              := i_SpeculateIP;
                     v_ApplyResolvedUpdate := true;
 
-                -- Non-speculative update at resolution stage for non-predicted call/ret.
+                -- Non-speculative update
                 elsif (i_UpdateEnable = '1') and (i_UpdateIsPredictionUsed = '0') then
-                    v_WorkInstruction := i_UpdateInstruction;
-                    v_WorkIP    := i_UpdateIP;
+                    v_WorkInstruction     := i_UpdateInstruction;
+                    v_WorkIP              := i_UpdateIP;
                     v_ApplyResolvedUpdate := true;
+
                 end if;
 
                 if v_ApplyResolvedUpdate then
@@ -446,8 +462,7 @@ begin
                     v_Imm12  := v_WorkInstruction(31 downto 20);
 
                     v_IsCallInstruction    := (v_Opcode = "1101111") and ((v_RD = "00001") or (v_RD = "00101"));
-                    v_IsReturnInstruction  := (v_Opcode = "1100111") and (v_Func3 = "000") and
-                               (v_RD = "00000") and (v_RS1 = "00001") and (v_Imm12 = "000000000000");
+                    v_IsReturnInstruction  := (v_Opcode = "1100111") and (v_Func3 = "000") and (v_RD = "00000") and (v_RS1 = "00001") and (v_Imm12 = "000000000000");
 
                     if v_IsCallInstruction    then
                         v_IPStride := std_logic_vector(unsigned(v_WorkIP) + to_unsigned(4, DATA_WIDTH));
@@ -470,7 +485,9 @@ begin
                             else
                                 v_StackPointer := v_StackPointer - 1;
                             end if;
+
                             v_StackCount := v_StackCount - 1;
+
                         end if;
                     end if;
 
@@ -485,9 +502,11 @@ begin
 
     end process;
 
+    -----------------------------------------------------
+
 
     -----------------------------------------------------
-    -- Branch Decision Logic
+    -- Standard branch resolution logic
     -----------------------------------------------------
 
     process(

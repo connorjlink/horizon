@@ -7,14 +7,16 @@ use IEEE.std_logic_1164.all;
 package types is
 
 -- Generic placeholders to define the bit widths for the architecture
-constant DATA_WIDTH     : natural := 32;
-constant ADDRESS_WIDTH  : natural := 32;
-constant THREAD_COUNT   : natural := 2;
-constant THREAD_WIDTH   : natural := 1; -- clog2(THREAD_COUNT)
-constant REGISTER_COUNT : natural := 32;
-constant REGISTER_WIDTH : natural := 5; -- clog2(REGISTER_COUNT)
+constant DATA_WIDTH      : natural := 32;
+constant WIDE_DATA_WIDTH : natural := DATA_WIDTH * 2;
+constant ADDRESS_WIDTH   : natural := 32;
+constant THREAD_COUNT    : natural := 2;
+constant THREAD_WIDTH    : natural := 1; -- clog2(THREAD_COUNT)
+constant REGISTER_COUNT  : natural := 32;
+constant REGISTER_WIDTH  : natural := 5; -- clog2(REGISTER_COUNT)
+constant CSR_WIDTH       : natural := 12;
 
--- Return Address Stack (RAS) configuration
+-- Return address stack configuration
 constant RAS_DEPTH        : natural := 32;
 constant RAS_POINTER_BITS : natural := 5; -- clog2(RAS_DEPTH)
 constant RAS_COUNT_BITS   : natural := 6; -- clog2(RAS_DEPTH + 1) rounded up
@@ -24,14 +26,19 @@ constant RAS_COUNT_BITS   : natural := 6; -- clog2(RAS_DEPTH + 1) rounded up
 subtype data_vector_t is std_logic_vector(DATA_WIDTH - 1 downto 0);
 subtype data_unsigned_t is unsigned(DATA_WIDTH - 1 downto 0);
 
+subtype wide_data_vector_t is std_logic_vector(WIDE_DATA_WIDTH - 1 downto 0);
+subtype wide_data_unsigned_t is unsigned(WIDE_DATA_WIDTH - 1 downto 0);
+
 subtype address_vector_t is std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
 
 subtype address_unsigned_t is unsigned(ADDRESS_WIDTH - 1 downto 0);
 subtype thread_id_t is std_logic_vector(THREAD_WIDTH - 1 downto 0);
 
-subtype register_vector_t is std_logic_vector(REGISTER_WIDTH - 1 downto 0);
+subtype register_id_vector_t is std_logic_vector(REGISTER_WIDTH - 1 downto 0);
 subtype ras_pointer_vector_t is std_logic_vector(RAS_POINTER_BITS - 1 downto 0);
 subtype ras_count_vector_t is std_logic_vector(RAS_COUNT_BITS - 1 downto 0);
+
+subtype csr_address_vector_t is std_logic_vector(CSR_WIDTH - 1 downto 0);
 
 -- Type declaration for the register file storage
 type array_t is array (natural range <>) of std_logic_vector(31 downto 0);
