@@ -27,184 +27,184 @@ end processor;
 
 architecture implementation of processor is
 
-signal s_DataMemoryWriteEnable : std_logic;
-signal s_DataMemoryAddress     : std_logic_vector(N-1 downto 0);
-signal s_DataMemoryData        : std_logic_vector(N-1 downto 0);
-signal s_DataMemoryOutput      : std_logic_vector(N-1 downto 0);
- 
-signal s_RegisterFileWriteEnable : std_logic;
-signal s_RegisterFileSelect      : std_logic_vector(4 downto 0);
-signal s_RegisterFileData        : std_logic_vector(N-1 downto 0);
+    signal s_DataMemoryWriteEnable : std_logic;
+    signal s_DataMemoryAddress     : std_logic_vector(N-1 downto 0);
+    signal s_DataMemoryData        : std_logic_vector(N-1 downto 0);
+    signal s_DataMemoryOutput      : std_logic_vector(N-1 downto 0);
+    
+    signal s_RegisterFileWriteEnable : std_logic;
+    signal s_RegisterFileSelect      : std_logic_vector(4 downto 0);
+    signal s_RegisterFileData        : std_logic_vector(N-1 downto 0);
 
-signal s_InstructionMemoryAddress : std_logic_vector(N-1 downto 0);
-signal s_NextInstructionAddress   : std_logic_vector(N-1 downto 0);
-signal s_Instruction              : std_logic_vector(N-1 downto 0);
-
-
--- Signals to hold the intermediate outputs from the register file
-signal s_RS1Data : std_logic_vector(31 downto 0);
-signal s_RS2Data : std_logic_vector(31 downto 0);
-
--- Signal to hold the ALU inputs and outputs
-signal s_ALUOperand1     : std_logic_vector(31 downto 0);
-signal s_RealALUOperand1 : std_logic_vector(31 downto 0);
-signal s_ALUOperand2     : std_logic_vector(31 downto 0);
-signal s_RealALUOperand2 : std_logic_vector(31 downto 0);
-signal s_ALUDone         : std_logic;
-signal s_ALUBusy         : std_logic;
-
--- Signals to handle the intputs/outputs of the branch unit
-signal s_BranchOperand1 : std_logic_vector(31 downto 0);
-signal s_BranchOperand2 : std_logic_vector(31 downto 0);
-signal s_BranchTaken    : std_logic;
-signal s_BranchNotTaken : std_logic;
-signal s_BranchLoad     : std_logic := '0';
-
--- Branch predictor (BTB/PHT/RAS) interface signals
-signal s_BranchUnit_Prediction         : std_logic := '0';
-signal s_BranchUnit_BTBIsHit           : std_logic := '0';
-signal s_BranchUnit_PredictedTarget    : std_logic_vector(31 downto 0) := (others => '0');
-signal s_BranchUnit_PredictedOperator  : branch_operator_t := BRANCH_NONE;
-signal s_BranchUnit_IsReturnPrediction : std_logic := '0';
-signal s_BranchUnit_RASPointer         : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
-signal s_BranchUnit_RASCount           : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
-signal s_BranchUnit_RestoreEnable      : std_logic := '0';
-signal s_BranchUnit_RestorePointer     : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
-signal s_BranchUnit_RestoreCount       : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
-signal s_BranchUnit_PredictionEligible : std_logic := '0';
-signal s_BranchUnit_IsPredictionUsed   : std_logic := '0';
-signal s_BranchUnit_IsMispredict       : std_logic := '0';
-signal s_BranchUnit_RedirectEnable     : std_logic := '0';
-signal s_BranchUnit_RedirectAddress    : std_logic_vector(31 downto 0) := (others => '0');
-signal s_BranchUnit_ResolvedLoad       : std_logic := '0';
-
--- JALR in-flight analysis
-signal s_JALR_IsVerified       : std_logic := '0';
-signal s_JALR_TargetComputed   : std_logic_vector(31 downto 0) := (others => '0');
-signal s_JALR_IsVerified_IDEX  : std_logic := '0';
-signal s_PredUsed_IDEX         : std_logic := '0';
-
-signal s_IPLoad                : std_logic := '0';
-signal s_IPLoadAddress         : std_logic_vector(31 downto 0) := (others => '0');
-
-signal s_IFID_Flush_Final : std_logic := '0';
-signal s_IDEX_Flush_Final : std_logic := '0';
-
--- Signal to hold the modified clock
-signal n_Clock  : std_logic;
-
--- Signals to hold the computed memory instruction address input to the IP
-signal s_BranchAddress           : std_logic_vector(31 downto 0);
-signal s_BranchUnit_UpdateEnable : std_logic;
-
--- Signal to output the contents of the instruction pointer
-signal s_IPAddress : std_logic_vector(31 downto 0);
-signal s_IPBreak   : std_logic;
-
--- Signals to drive the hazard detection and correction logic
-signal s_IFID_IsLoad  : std_logic;
-signal s_IDEX_IsLoad  : std_logic;
-signal s_EXMEM_IsLoad : std_logic;
-signal s_MEMWB_IsLoad : std_logic;
+    signal s_InstructionMemoryAddress : std_logic_vector(N-1 downto 0);
+    signal s_NextInstructionAddress   : std_logic_vector(N-1 downto 0);
+    signal s_Instruction              : std_logic_vector(N-1 downto 0);
 
 
-signal s_ForwardedDMemData : std_logic_vector(31 downto 0);
-signal s_DataMemoryBuffer  : std_logic_vector(31 downto 0);
+    -- Signals to hold the intermediate outputs from the register file
+    signal s_RS1Data : std_logic_vector(31 downto 0);
+    signal s_RS2Data : std_logic_vector(31 downto 0);
 
-signal s_MemALUOperand1 : std_logic_vector(31 downto 0) := (others => '0');
-signal s_MemALUOperand2 : std_logic_vector(31 downto 0) := (others => '0');
-----------------------------------------------------------------------------------
----- Pipeline Data Signals
----- NOTE: the two identifiers are not the source and destination connections
----- The first is the source of the pipeline register, and the second is the stage
----- operating the pool of signals at hand.
-----
----- Thus, EXMEM_IF_raw are the `input` signals to the pipeline register after the ALU
----- stage driven by the instruction register (so IPAddress, Instruction, etc.)
-----------------------------------------------------------------------------------
-signal IFID_IF_raw,   IFID_IF_buf   : IF_record_t;
+    -- Signal to hold the ALU inputs and outputs
+    signal s_ALUOperand1     : std_logic_vector(31 downto 0);
+    signal s_RealALUOperand1 : std_logic_vector(31 downto 0);
+    signal s_ALUOperand2     : std_logic_vector(31 downto 0);
+    signal s_RealALUOperand2 : std_logic_vector(31 downto 0);
+    signal s_ALUDone         : std_logic;
+    signal s_ALUBusy         : std_logic;
 
-signal IDEX_IF_raw,   IDEX_IF_buf   : IF_record_t;
-signal IDEX_ID_raw,   IDEX_ID_buf   : ID_record_t;
+    -- Signals to handle the intputs/outputs of the branch unit
+    signal s_BranchOperand1 : std_logic_vector(31 downto 0);
+    signal s_BranchOperand2 : std_logic_vector(31 downto 0);
+    signal s_BranchTaken    : std_logic;
+    signal s_BranchNotTaken : std_logic;
+    signal s_BranchLoad     : std_logic := '0';
 
-signal EXMEM_IF_raw,  EXMEM_IF_buf  : IF_record_t;
-signal EXMEM_ID_raw,  EXMEM_ID_buf  : ID_record_t;
-signal EXMEM_EX_raw,  EXMEM_EX_buf  : EX_record_t;
+    -- Branch predictor (BTB/PHT/RAS) interface signals
+    signal s_BranchUnit_Prediction         : std_logic := '0';
+    signal s_BranchUnit_BTBIsHit           : std_logic := '0';
+    signal s_BranchUnit_PredictedTarget    : std_logic_vector(31 downto 0) := (others => '0');
+    signal s_BranchUnit_PredictedOperator  : branch_operator_t := BRANCH_NONE;
+    signal s_BranchUnit_IsReturnPrediction : std_logic := '0';
+    signal s_BranchUnit_RASPointer         : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
+    signal s_BranchUnit_RASCount           : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
+    signal s_BranchUnit_RestoreEnable      : std_logic := '0';
+    signal s_BranchUnit_RestorePointer     : std_logic_vector(RAS_POINTER_BITS-1 downto 0) := (others => '0');
+    signal s_BranchUnit_RestoreCount       : std_logic_vector(RAS_COUNT_BITS-1 downto 0) := (others => '0');
+    signal s_BranchUnit_PredictionEligible : std_logic := '0';
+    signal s_BranchUnit_IsPredictionUsed   : std_logic := '0';
+    signal s_BranchUnit_IsMispredict       : std_logic := '0';
+    signal s_BranchUnit_RedirectEnable     : std_logic := '0';
+    signal s_BranchUnit_RedirectAddress    : std_logic_vector(31 downto 0) := (others => '0');
+    signal s_BranchUnit_ResolvedLoad       : std_logic := '0';
 
-signal MEMWB_IF_raw,  MEMWB_IF_buf  : IF_record_t;
-signal MEMWB_ID_raw,  MEMWB_ID_buf  : ID_record_t;
-signal MEMWB_EX_raw,  MEMWB_EX_buf  : EX_record_t;
-signal MEMWB_MEM_raw, MEMWB_MEM_buf : MEM_record_t;
+    -- JALR in-flight analysis
+    signal s_JALR_IsVerified       : std_logic := '0';
+    signal s_JALR_TargetComputed   : std_logic_vector(31 downto 0) := (others => '0');
+    signal s_JALR_IsVerified_IDEX  : std_logic := '0';
+    signal s_PredUsed_IDEX         : std_logic := '0';
 
-signal WB_WB_raw,     WB_WB_buf     : WB_record_t;
+    signal s_IPLoad                : std_logic := '0';
+    signal s_IPLoadAddress         : std_logic_vector(31 downto 0) := (others => '0');
 
-signal s_IFID_Stall,  s_IFID_Flush  : std_logic := '0';
-signal s_IDEX_Stall,  s_IDEX_Flush  : std_logic := '0';
-signal s_EXMEM_Stall, s_EXMEM_Flush : std_logic := '0';
+    signal s_IFID_Flush_Final : std_logic := '0';
+    signal s_IDEX_Flush_Final : std_logic := '0';
 
-signal s_EXMEM_MemoryWriteEnable : std_logic := '0';
-----------------------------------------------------------------------------------
+    -- Signal to hold the modified clock
+    signal n_Clock  : std_logic;
 
-----------------------------------------------------------------------------------
----- Data Forwarding Signals
-----------------------------------------------------------------------------------
-signal s_ForwardALUOperand1 : forwarding_path_t := FORWARDING_NONE;
-signal s_ForwardALUOperand2 : forwarding_path_t := FORWARDING_NONE;
-signal s_ForwardBGUOperand1 : forwarding_path_t := FORWARDING_NONE;
-signal s_ForwardBGUOperand2 : forwarding_path_t := FORWARDING_NONE;
-signal s_ForwardMemData     : forwarding_path_t := FORWARDING_NONE;
-----------------------------------------------------------------------------------
+    -- Signals to hold the computed memory instruction address input to the IP
+    signal s_BranchAddress           : std_logic_vector(31 downto 0);
+    signal s_BranchUnit_UpdateEnable : std_logic;
 
-----------------------------------------------------------------------------------
----- Multithreading Support Signals
-----------------------------------------------------------------------------------
-signal s_StallThread : std_logic_vector(THREAD_COUNT-1 downto 0) := (others => '0');
-----------------------------------------------------------------------------------
+    -- Signal to output the contents of the instruction pointer
+    signal s_IPAddress : std_logic_vector(31 downto 0);
+    signal s_IPBreak   : std_logic;
 
-----------------------------------------------------------------------------------
----- Helper Function for Load/Store Data Size Extension
-----------------------------------------------------------------------------------
+    -- Signals to drive the hazard detection and correction logic
+    signal s_IFID_IsLoad  : std_logic;
+    signal s_IDEX_IsLoad  : std_logic;
+    signal s_EXMEM_IsLoad : std_logic;
+    signal s_MEMWB_IsLoad : std_logic;
 
-function ExtendMemoryData(
-    Data             : std_logic_vector(31 downto 0);
-    MemoryWidth      : data_width_t;
-    IsSignExtend     : std_logic;
-    DestinationWidth : natural
-) return std_logic_vector is
-    variable Result : std_logic_vector(DestinationWidth - 1 downto 0);
-begin
-    case MemoryWidth is
-        when BYTE_TYPE =>
-            if IsSignExtend = '0' then
-                Result := std_logic_vector(resize(unsigned(Data(7 downto 0)), DestinationWidth));
-            else
-                Result := std_logic_vector(resize(signed(Data(7 downto 0)), DestinationWidth));
-            end if;
 
-        when HALF_TYPE =>
-            if IsSignExtend = '0' then
-                Result := std_logic_vector(resize(unsigned(Data(15 downto 0)), DestinationWidth));
-            else
-                Result := std_logic_vector(resize(signed(Data(15 downto 0)), DestinationWidth));
-            end if;
+    signal s_ForwardedDMemData : std_logic_vector(31 downto 0);
+    signal s_DataMemoryBuffer  : std_logic_vector(31 downto 0);
 
-        when WORD_TYPE =>
-            if IsSignExtend = '0' then
-                Result := std_logic_vector(resize(unsigned(Data(31 downto 0)), DestinationWidth));
-            else
-                Result := std_logic_vector(resize(signed(Data(31 downto 0)), DestinationWidth));
-            end if;
+    signal s_MemALUOperand1 : std_logic_vector(31 downto 0) := (others => '0');
+    signal s_MemALUOperand2 : std_logic_vector(31 downto 0) := (others => '0');
+    -----------------------------------------------------
+    ---- Pipeline Data Signals
+    ---- NOTE: the two identifiers are not the source and destination connections
+    ---- The first is the source of the pipeline register, and the second is the stage
+    ---- operating the pool of signals at hand.
+    ----
+    ---- Thus, EXMEM_IF_raw are the `input` signals to the pipeline register after the ALU
+    ---- stage driven by the instruction register (so IPAddress, Instruction, etc.)
+    -----------------------------------------------------
+    signal IFID_IF_raw,   IFID_IF_buf   : IF_record_t;
 
-        when others =>
-            Result := (others => '0');
+    signal IDEX_IF_raw,   IDEX_IF_buf   : IF_record_t;
+    signal IDEX_ID_raw,   IDEX_ID_buf   : ID_record_t;
 
-    end case;
+    signal EXMEM_IF_raw,  EXMEM_IF_buf  : IF_record_t;
+    signal EXMEM_ID_raw,  EXMEM_ID_buf  : ID_record_t;
+    signal EXMEM_EX_raw,  EXMEM_EX_buf  : EX_record_t;
 
-    return Result;
+    signal MEMWB_IF_raw,  MEMWB_IF_buf  : IF_record_t;
+    signal MEMWB_ID_raw,  MEMWB_ID_buf  : ID_record_t;
+    signal MEMWB_EX_raw,  MEMWB_EX_buf  : EX_record_t;
+    signal MEMWB_MEM_raw, MEMWB_MEM_buf : MEM_record_t;
 
-end function;
+    signal WB_WB_raw,     WB_WB_buf     : WB_record_t;
 
-----------------------------------------------------------------------------------
+    signal s_IFID_Stall,  s_IFID_Flush  : std_logic := '0';
+    signal s_IDEX_Stall,  s_IDEX_Flush  : std_logic := '0';
+    signal s_EXMEM_Stall, s_EXMEM_Flush : std_logic := '0';
+
+    signal s_EXMEM_MemoryWriteEnable : std_logic := '0';
+    -----------------------------------------------------
+
+    -----------------------------------------------------
+    ---- Data Forwarding Signals
+    -----------------------------------------------------
+    signal s_ForwardALUOperand1 : forwarding_path_t := FORWARDING_NONE;
+    signal s_ForwardALUOperand2 : forwarding_path_t := FORWARDING_NONE;
+    signal s_ForwardBGUOperand1 : forwarding_path_t := FORWARDING_NONE;
+    signal s_ForwardBGUOperand2 : forwarding_path_t := FORWARDING_NONE;
+    signal s_ForwardMemData     : forwarding_path_t := FORWARDING_NONE;
+    -----------------------------------------------------
+
+    -----------------------------------------------------
+    ---- Multithreading Support Signals
+    -----------------------------------------------------
+    signal s_StallThread : std_logic_vector(THREAD_COUNT-1 downto 0) := (others => '0');
+    -----------------------------------------------------
+
+    -----------------------------------------------------
+    ---- Helper Function for Load/Store Data Size Extension
+    -----------------------------------------------------
+
+    function ExtendMemoryData(
+        Data             : std_logic_vector(31 downto 0);
+        MemoryWidth      : data_width_t;
+        IsSignExtend     : std_logic;
+        DestinationWidth : natural
+    ) return std_logic_vector is
+        variable Result : std_logic_vector(DestinationWidth - 1 downto 0);
+    begin
+        case MemoryWidth is
+            when BYTE_TYPE =>
+                if IsSignExtend = '0' then
+                    Result := std_logic_vector(resize(unsigned(Data(7 downto 0)), DestinationWidth));
+                else
+                    Result := std_logic_vector(resize(signed(Data(7 downto 0)), DestinationWidth));
+                end if;
+
+            when HALF_TYPE =>
+                if IsSignExtend = '0' then
+                    Result := std_logic_vector(resize(unsigned(Data(15 downto 0)), DestinationWidth));
+                else
+                    Result := std_logic_vector(resize(signed(Data(15 downto 0)), DestinationWidth));
+                end if;
+
+            when WORD_TYPE =>
+                if IsSignExtend = '0' then
+                    Result := std_logic_vector(resize(unsigned(Data(31 downto 0)), DestinationWidth));
+                else
+                    Result := std_logic_vector(resize(signed(Data(31 downto 0)), DestinationWidth));
+                end if;
+
+            when others =>
+                Result := (others => '0');
+
+        end case;
+
+        return Result;
+
+    end function;
+
+    -----------------------------------------------------
 
 begin
 

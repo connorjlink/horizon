@@ -22,7 +22,7 @@ entity csr_file is
         -- TODO: integrate SRET and URET privilege level transitions from returns
         i_ExceptionIP            : in  address_vector_t;
         i_FaultValue             : in  address_vector_t;
-        i_MCause                 : in  std_logic_vector(3 downto 0);
+        i_MCAUSE                 : in  std_logic_vector(3 downto 0);
 
         o_CSR_ReadData           : out data_vector_t;
         o_MTVEC_Base             : out address_vector_t;
@@ -52,31 +52,67 @@ architecture implementation of csr_file is
     signal s_MTVAL_Q     : data_vector_t;
     signal s_MTVEC_Q     : data_vector_t;
     signal s_MSCRATCH_Q  : data_vector_t;
+    signal s_MCYCLE_Q    : wide_data_vector_t := (others => '0');
+    signal s_MINSTRET_Q  : wide_data_vector_t := (others => '0');
+
     -- Signals to hold data inputs
     signal s_D_MSTATUS   : data_vector_t;
     signal s_D_MEPC      : data_vector_t;
     signal s_D_MCAUSE    : data_vector_t;
     signal s_D_MTVAL     : data_vector_t;
+    signal s_MCYCLE_D    : wide_data_vector_t;
+    signal s_MINSTRET_D  : wide_data_vector_t;
 
     -- Signals to hold write-enable logic
-    signal s_WE_MSTATUS  : std_logic;
-    signal s_WE_MEPC     : std_logic;
-    signal s_WE_MCAUSE   : std_logic;
-    signal s_WE_MTVAL    : std_logic;
-    signal s_WE_MTVEC    : std_logic;
-    signal s_WE_MSCRATCH : std_logic;
-    signal s_WE_MCYCLE   : std_logic;
-    signal s_WE_MINSTRET : std_logic;
-
-    -- Signals to hold performance counter values
-    -- TODO: update using custom generic adder
-    signal s_MCYCLE_Q    : wide_data_vector_t := (others => '0');
-    signal s_MCYCLE_D    : wide_data_vector_t;
-    signal s_MINSTRET_Q  : wide_data_vector_t := (others => '0');
-    signal s_MINSTRET_D  : wide_data_vector_t;
+    signal s_MSTATUSWriteEnable  : std_logic;
+    signal s_MEPCWriteEnable     : std_logic;
+    signal s_MCAUSEWriteEnable   : std_logic;
+    signal s_MTVALWriteEnable    : std_logic;
+    signal s_MTVECWriteEnable    : std_logic;
+    signal s_MSCRATCHWriteEnable : std_logic;
+    signal s_MCYCLEWriteEnable   : std_logic;
+    signal s_MINSTRETWriteEnable : std_logic;
 
     -- Privilege level tracking
     signal s_PrivilegeLevel : privilege_level_t := MACHINE_MODE;
+
+
+    -----------------------------------------------------
+    ---- Helper Functions for CSR Write Enablement
+    -----------------------------------------------------
+
+    function CSRWriteEnable(
+        WriteEnable   : std_logic;
+        WriteAddress  : csr_address_vector_t;
+        TargetAddress : csr_address_vector_t
+    ) return std_logic is
+    begin
+        if WriteEnable = '1' and WriteAddress = TargetAddress then
+            return '1';
+        else
+            return '0';
+
+        end if;
+
+    end function;
+
+    function CSRWriteEnableTrapPriority(
+        TrapTaken     : std_logic;
+        WriteEnable   : std_logic;
+        WriteAddress  : csr_address_vector_t;
+        TargetAddress : csr_address_vector_t
+    ) return std_logic is
+    begin
+        if TrapTaken = '1' and WriteEnable = '1' and WriteAddress = TargetAddress then
+            return '1';
+        else
+            return '0';
+
+        end if;
+
+    end function;
+
+    -----------------------------------------------------
 
 begin
 
@@ -86,7 +122,7 @@ begin
     o_PrivilegeLevel <= s_PrivilegeLevel;
 
     -----------------------------------------------------
-    -- CSR Read Logic
+    ---- CSR Read Logic
     -----------------------------------------------------
 
     process(
@@ -117,25 +153,16 @@ begin
     -- Write enable logic
     -----------------------------------------------------
 
-    s_WE_MSTATUS  <= '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MSTATUS) else '0'; 
-    s_WE_MTVEC    <= '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MTVEC) else '0';
-    s_WE_MSCRATCH <= '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MSCRATCH) else '0';
-    
-    -- Hardware traps take priority for architectural state changes
-    s_WE_MEPC     <= '1' when i_TrapTaken = '1' else 
-                     '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MEPC) else 
-                     '0';
-    
-    s_WE_MCAUSE   <= '1' when i_TrapTaken = '1' else 
-                     '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MCAUSE) else 
-                     '0';
-                     
-    s_WE_MTVAL    <= '1' when i_TrapTaken = '1' else 
-                     '1' when (i_CSR_WriteEnable = '1' and i_CSR_WriteAddress = CSR_MTVAL) else 
-                     '0';
+    s_MSTATUSWriteEnable  <= CSRWriteEnable(i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MSTATUS);
+    s_MTVECWriteEnable    <= CSRWriteEnable(i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MTVEC);
+    s_MSCRATCHWriteEnable <= CSRWriteEnable(i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MSCRATCH);
+    -- NOTE: Hardware traps take priority for architectural state changes
+    s_MEPCWriteEnable   <= CSRWriteEnableTrapPriority(i_TrapTaken, i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MEPC);
+    s_MCAUSEWriteEnable <= CSRWriteEnableTrapPriority(i_TrapTaken, i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MCAUSE);
+    s_MTVALWriteEnable  <= CSRWriteEnableTrapPriority(i_TrapTaken, i_CSR_WriteEnable, i_CSR_WriteAddress, CSR_MTVAL);
 
     s_D_MEPC      <= i_ExceptionIP when i_TrapTaken = '1' else i_CSR_WriteData;
-    s_D_MCAUSE    <= x"0000000" & i_MCause when i_TrapTaken = '1' else i_CSR_WriteData;
+    s_D_MCAUSE    <= x"0000000" & i_MCAUSE when i_TrapTaken = '1' else i_CSR_WriteData;
     s_D_MTVAL     <= i_FaultValue when i_TrapTaken = '1' else i_CSR_WriteData;
     s_D_MSTATUS   <= i_CSR_WriteData;
     -- TODO: add hardware trap logic to set MPIE/MPP in MSTATUS here
@@ -146,12 +173,12 @@ begin
     -----------------------------------------------------
     -- CSR register generation
     -----------------------------------------------------
-    REG_MSTATUS  : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MSTATUS,  i_D => s_D_MSTATUS,     o_Q => s_MSTATUS_Q);
-    REG_MTVEC    : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MTVEC,    i_D => i_CSR_WriteData, o_Q => s_MTVEC_Q);
-    REG_MSCRATCH : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MSCRATCH, i_D => i_CSR_WriteData, o_Q => s_MSCRATCH_Q);
-    REG_MEPC     : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MEPC,     i_D => s_D_MEPC,        o_Q => s_MEPC_Q);
-    REG_MCAUSE   : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MCAUSE,   i_D => s_D_MCAUSE,      o_Q => s_MCAUSE_Q);
-    REG_MTVAL    : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_WE_MTVAL,    i_D => s_D_MTVAL,       o_Q => s_MTVAL_Q);
+    REG_MSTATUS  : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MSTATUSWriteEnable,  i_D => s_D_MSTATUS,     o_Q => s_MSTATUS_Q);
+    REG_MTVEC    : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MTVECWriteEnable,    i_D => i_CSR_WriteData, o_Q => s_MTVEC_Q);
+    REG_MSCRATCH : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MSCRATCHWriteEnable, i_D => i_CSR_WriteData, o_Q => s_MSCRATCH_Q);
+    REG_MEPC     : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MEPCWriteEnable,     i_D => s_D_MEPC,        o_Q => s_MEPC_Q);
+    REG_MCAUSE   : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MCAUSEWriteEnable,   i_D => s_D_MCAUSE,      o_Q => s_MCAUSE_Q);
+    REG_MTVAL    : entity work.register_N generic map(N => 32) port map(i_Clock => i_Clock, i_Reset => i_Reset, i_WriteEnable => s_MTVALWriteEnable,    i_D => s_D_MTVAL,       o_Q => s_MTVAL_Q);
 
 
     -----------------------------------------------------
