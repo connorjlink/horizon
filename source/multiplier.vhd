@@ -49,7 +49,7 @@ begin
     s_PIsNegative <= s_AIsNegative xor s_BIsNegative;
 
     -- compute magnitudes for unsigned multiplication
-    e_NegativeA : entity work.addersubtractor_N
+    e_NegativeA: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -61,7 +61,7 @@ begin
             o_Carry         => open
         );
 
-    e_NegativeB : entity work.addersubtractor_N
+    e_NegativeB: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -73,7 +73,7 @@ begin
             o_Carry         => open
         );
 
-    e_AbsoluteValueMultiplexerA : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerA: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -84,7 +84,7 @@ begin
             o_O  => s_AbsoluteValueA
         );
 
-    e_AbsoluteValueMultiplexerB : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerB: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -100,7 +100,7 @@ begin
     s_AbsoluteValueP <= s_Accumulators(N);
 
     -- conditional negate to form signed product when needed
-    e_NegativeP : entity work.addersubtractor_N
+    e_NegativeP: entity work.addersubtractor_N
         generic map(
             N => M
         )
@@ -112,7 +112,7 @@ begin
             o_Carry         => open
         );
 
-    e_AbsoluteValueMultiplexerP : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerP: entity work.multiplexer_2to1_N
         generic map(
             N => M
         )
@@ -127,7 +127,7 @@ begin
         g_PartialProductColumns : for w in 0 to M-1 generate
 
             g_IsInRange : if (w >= j) and (w < (j + N)) generate
-                e_AND : entity work.and_2
+                e_AND: entity work.and_2
                     port map(
                         i_A => s_AbsoluteValueA(w - j),
                         i_B => s_AbsoluteValueB(j),
@@ -145,7 +145,7 @@ begin
 
 
     g_ACCUMULATOR : for j in 0 to N-1 generate
-        e_ADDER : entity work.adder_N
+        e_ADDER: entity work.adder_N
             generic map(
                 N => M
             )

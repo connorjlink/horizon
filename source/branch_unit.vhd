@@ -151,7 +151,7 @@ begin
     -- Instruction flow predecoder
     -----------------------------------------------------
 
-    e_InstructionPredecoder : entity work.instruction_predecoder
+    e_InstructionPredecoder: entity work.instruction_predecoder
         port map(
             i_Instruction    => i_LookupInstruction,
             o_BranchOperator => s_PredecoderBranchOperator
@@ -244,6 +244,7 @@ begin
            (i_LookupInstruction(19 downto 15) = "00001") and
            (i_LookupInstruction(31 downto 20) = "000000000000") then
             v_IsReturn := true;
+            
         end if;
 
         v_RASTop := (others => '0');

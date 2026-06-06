@@ -64,7 +64,7 @@ begin
         v_ForwardMemData     := FORWARDING_NONE;
 
         -----------------------------------------------------
-        ---- Arithmetic and memory access hazard resolution with forwarding
+        -- Arithmetic and memory access hazard resolution with forwarding
         -----------------------------------------------------
         if i_BranchMode = BRANCHMODE_NONE then
 
@@ -143,7 +143,7 @@ begin
 
         
         -----------------------------------------------------
-        ---- Branch hazard resolution with forwarding
+        -- Branch hazard resolution with forwarding
         -----------------------------------------------------
         elsif i_BranchMode /= BRANCHMODE_NONE or i_IsBranch = '1' or i_BranchTaken = '1' then
             

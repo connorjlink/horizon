@@ -60,7 +60,7 @@ begin
     s_RemainderIsNegative <= s_DividendIsNegative;
 
     -- conditional negate to form signed quotient and remainder when needed
-    e_NegativeDividend : entity work.addersubtractor_N
+    e_NegativeDividend: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -72,7 +72,7 @@ begin
             o_Carry         => open
         );
 
-    e_NegativeDivisor : entity work.addersubtractor_N
+    e_NegativeDivisor: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -84,7 +84,7 @@ begin
             o_Carry         => open
         );
 
-    e_NegativeQuotient : entity work.addersubtractor_N
+    e_NegativeQuotient: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -96,7 +96,7 @@ begin
             o_Carry         => open
         );
 
-    e_NegativeRemainder : entity work.addersubtractor_N
+    e_NegativeRemainder: entity work.addersubtractor_N
         generic map(
             N => N
         )
@@ -108,7 +108,7 @@ begin
             o_Carry         => open
         );
 
-    e_AbsoluteValueMultiplexerDividend : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerDividend: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -119,7 +119,7 @@ begin
             o_O  => s_AbsoluteValueDividend
         );
 
-    e_AbsoluteValueMultiplexerDivisor : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerDivisor: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -130,7 +130,7 @@ begin
             o_O  => s_AbsoluteValueDivisor
         );
 
-    e_AbsoluteValueMultiplexerQuotient : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerQuotient: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )
@@ -141,7 +141,7 @@ begin
             o_O  => s_AbsoluteValueQuotient
         );
 
-    e_AbsoluteValueMultiplexerRemainder : entity work.multiplexer_2to1_N
+    e_AbsoluteValueMultiplexerRemainder: entity work.multiplexer_2to1_N
         generic map(
             N => N
         )

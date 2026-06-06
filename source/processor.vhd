@@ -114,13 +114,13 @@ architecture implementation of processor is
     signal s_MemALUOperand1 : std_logic_vector(31 downto 0) := (others => '0');
     signal s_MemALUOperand2 : std_logic_vector(31 downto 0) := (others => '0');
     -----------------------------------------------------
-    ---- Pipeline Data Signals
-    ---- NOTE: the two identifiers are not the source and destination connections
-    ---- The first is the source of the pipeline register, and the second is the stage
-    ---- operating the pool of signals at hand.
+    -- Pipeline Data Signals
+    -- NOTE: the two identifiers are not the source and destination connections
+    -- The first is the source of the pipeline register, and the second is the stage
+    -- operating the pool of signals at hand.
     ----
-    ---- Thus, EXMEM_IF_raw are the `input` signals to the pipeline register after the ALU
-    ---- stage driven by the instruction register (so IPAddress, Instruction, etc.)
+    -- Thus, EXMEM_IF_raw are the `input` signals to the pipeline register after the ALU
+    -- stage driven by the instruction register (so IPAddress, Instruction, etc.)
     -----------------------------------------------------
     signal IFID_IF_raw,   IFID_IF_buf   : IF_record_t;
 
@@ -146,7 +146,7 @@ architecture implementation of processor is
     -----------------------------------------------------
 
     -----------------------------------------------------
-    ---- Data Forwarding Signals
+    -- Data Forwarding Signals
     -----------------------------------------------------
     signal s_ForwardALUOperand1 : forwarding_path_t := FORWARDING_NONE;
     signal s_ForwardALUOperand2 : forwarding_path_t := FORWARDING_NONE;
@@ -156,13 +156,13 @@ architecture implementation of processor is
     -----------------------------------------------------
 
     -----------------------------------------------------
-    ---- Multithreading Support Signals
+    -- Multithreading Support Signals
     -----------------------------------------------------
     signal s_StallThread : std_logic_vector(THREAD_COUNT-1 downto 0) := (others => '0');
     -----------------------------------------------------
 
     -----------------------------------------------------
-    ---- Helper Function for Load/Store Data Size Extension
+    -- Helper Function for Load/Store Data Size Extension
     -----------------------------------------------------
 
     function ExtendMemoryData(
@@ -219,7 +219,7 @@ begin
             i_InstructionAddress when others;
 
     -----------------------------------------------------
-    ---- Memory Subsystem
+    -- Memory Subsystem
     -----------------------------------------------------
 
     e_InstructionMemory: entity work.memory
@@ -255,7 +255,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Instruction -> Control Unit stage register(s)
+    -- Instruction -> Control Unit stage register(s)
     -----------------------------------------------------
 
     e_IFID_RegisterIF: entity work.register_IF
@@ -274,7 +274,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Control Unit -> Arithmetic Logic Unit stage register(s)
+    -- Control Unit -> Arithmetic Logic Unit stage register(s)
     -----------------------------------------------------
 
     e_IDEX_RegisterIF: entity work.register_IF
@@ -304,7 +304,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- ALU -> Memory stage register(s)
+    -- ALU -> Memory stage register(s)
     -----------------------------------------------------
 
     e_EXMEM_RegisterIF: entity work.register_IF
@@ -345,7 +345,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Memory -> Register File stage register(s)
+    -- Memory -> Register File stage register(s)
     -----------------------------------------------------
 
     e_MEMWB_Register_IF: entity work.register_IF
@@ -393,7 +393,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Register File -> x stage register(s)
+    -- Register File -> x stage register(s)
     -----------------------------------------------------
 
     WB_WB_raw.Result      <= MEMWB_EX_buf.Result;
@@ -416,7 +416,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Instruction Pointer Unit
+    -- Instruction Pointer Unit
     -----------------------------------------------------
 
     s_BranchAddress <= std_logic_vector(signed(IDEX_IF_buf.InstructionAddress) + signed(IDEX_ID_buf.Immediate)) when (IDEX_ID_buf.BranchMode = BRANCHMODE_JAL_OR_BCC) else
@@ -569,7 +569,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Branch Generation Unit
+    -- Branch Generation Unit
     -----------------------------------------------------
 
     with s_ForwardBGUOperand1 select
@@ -632,7 +632,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Processor Control Unit
+    -- Processor Control Unit
     -----------------------------------------------------
 
     e_ControlUnit: entity work.control_unit
@@ -669,7 +669,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Register File Subsystem
+    -- Register File Subsystem
     -----------------------------------------------------
 
     with MEMWB_ID_buf.RegisterSource select
@@ -701,7 +701,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Arithmetic Logic Unit
+    -- Arithmetic Logic Unit
     -----------------------------------------------------
 
     s_MemALUOperand1 <= MEMWB_MEM_buf.Data when (MEMWB_ID_buf.MemoryWidth /= NONE_TYPE) else
@@ -758,7 +758,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Data Memory Subsystem
+    -- Data Memory Subsystem
     -----------------------------------------------------
 
     with i_DataLoad select
@@ -795,7 +795,7 @@ begin
 
 
     -----------------------------------------------------
-    ---- Hardware Pipeline Scheduling
+    -- Hardware Pipeline Scheduling
     -----------------------------------------------------
         
     -- NOTE: IsLoad is simply set when the instruction is a load or store instruction.
